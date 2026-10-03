@@ -1,0 +1,2458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mazbay Wood - Retail Stock Management System</title>
+  <meta name="description" content="Retail stock management and inventory tracking system for Mazbay Wood home furniture store." />
+  <meta property="og:title" content="Mazbay Wood - Retail Stock Management System" />
+  <meta property="og:description" content="Retail stock management and inventory tracking system for Mazbay Wood home furniture store." />
+
+  <!-- Mazbay Wood artisanal carved crescent logo as favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M51 10 C31 10 14 27 14 49 C14 71 30 87 50 87 C65 87 76 77 81 57 C66 69 47 70 36 58 C27 46 29 26 51 10 Z' fill='%2373421d' stroke='%23d8ab7f' stroke-width='2'/%3E%3Ctext x='44' y='66' font-size='15' font-family='Arial, sans-serif' font-weight='bold' fill='%23351a06' text-anchor='middle'%3EMB%3C/text%3E%3C/svg%3E" />
+
+  <!-- Google Material Symbols Outlined for crisp icons without emojis -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <style>
+    /* basic reset and clean retail styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ensuring icons align nicely with text */
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 22;
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    /* top header bar */
+    .app-header {
+      background-color: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon-box {
+      width: 44px;
+      height: 44px;
+      background: radial-gradient(circle, #fdfbf7 30%, #f3ebe1 100%);
+      border: 1px solid #d8c7b5;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #0f172a;
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .clock-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .currency-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #f8fafc;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      letter-spacing: 0.5px;
+    }
+
+    /* navigation tab bar */
+    .nav-container {
+      background-color: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 24px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      align-items: center;
+    }
+
+    .nav-tab {
+      background: none;
+      border: 2px solid transparent;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 100px;
+      font-weight: 500;
+      transition: all 0.2s ease-out;
+      flex-shrink: 0;
+    }
+
+    .nav-tab:hover {
+      color: #0f172a;
+      background-color: #f8fafc;
+    }
+
+    .nav-tab.active {
+      color: #0f172a;
+      border-color: #1e293b;
+      background-color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    nav:nth-of-type(1) > button:nth-of-type(1) {
+      border-radius: 100px;
+      border-width: 2px;
+      border-style: solid;
+    }
+
+    nav:nth-of-type(1) > button:nth-of-type(2) {
+      border-radius: 100px;
+    }
+
+    /* main content container */
+    .app-main {
+      flex: 1;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* metrics KPI bar */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      background-color: #f1f5f9;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .metric-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+
+    /* panels and surfaces */
+    .panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-body {
+      padding: 20px;
+    }
+
+    /* search and filters toolbar */
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .search-input-wrap .material-symbols-outlined {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+    }
+
+    .search-input-wrap input {
+      width: 100%;
+      padding: 9px 12px 9px 38px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.15s ease-out;
+    }
+
+    .search-input-wrap input:focus {
+      border-color: #334155;
+    }
+
+    .filter-select {
+      padding: 9px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      outline: none;
+      color: #334155;
+      min-width: 160px;
+    }
+
+    .filter-select:focus {
+      border-color: #334155;
+    }
+
+    /* standard buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease-out;
+    }
+
+    .btn-primary {
+      background-color: #1e293b;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: #0f172a;
+    }
+
+    .btn-secondary {
+      background-color: #f1f5f9;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-danger {
+      background-color: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .btn-danger:hover {
+      background-color: #fee2e2;
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    /* tables */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    table.data-table th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+
+    table.data-table td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+
+    table.data-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+
+    /* badges and indicators */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-in-stock {
+      background-color: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .badge-low-stock {
+      background-color: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .badge-out-of-stock {
+      background-color: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .badge-allocated {
+      background-color: #f8fafc;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .sku-code {
+      font-family: Consolas, Monaco, "Courier New", Courier, monospace;
+      font-size: 12px;
+      color: #334155;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    /* form styling */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .form-control {
+      padding: 9px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      background: #ffffff;
+      color: #1e293b;
+      transition: border-color 0.15s ease-out;
+    }
+
+    .form-control:focus {
+      border-color: #334155;
+    }
+
+    .form-hint {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .form-actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    /* report preview card */
+    .report-meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .report-date-tag {
+      font-size: 13px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .report-date-value {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-out;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      transform: scale(0.97);
+      transition: transform 0.2s ease-out;
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      color: #0f172a;
+      background-color: #f1f5f9;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      background-color: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* on-screen toast notifications (overselling warnings and alerts) */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      max-width: 440px;
+      width: calc(100% - 48px);
+    }
+
+    .toast-item {
+      pointer-events: auto;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      animation: toastSlideIn 0.22s ease-out forwards;
+    }
+
+    @keyframes toastSlideIn {
+      from {
+        transform: translateY(12px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .toast-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }
+
+    .toast-msg {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    .toast-error {
+      border-left: 4px solid #dc2626;
+    }
+    .toast-error .toast-icon {
+      color: #dc2626;
+    }
+
+    .toast-success {
+      border-left: 4px solid #16a34a;
+    }
+    .toast-success .toast-icon {
+      color: #16a34a;
+    }
+
+    .toast-warning {
+      border-left: 4px solid #d97706;
+    }
+    .toast-warning .toast-icon {
+      color: #d97706;
+    }
+
+    .toast-info {
+      border-left: 4px solid #1e293b;
+    }
+    .toast-info .toast-icon {
+      color: #1e293b;
+    }
+
+    /* clean empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 42px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+
+    .empty-desc {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* print styling for formal inventory reports */
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .app-header, .nav-container, .btn, .toolbar-row, .modal-overlay, .toast-container, .no-print {
+        display: none !important;
+      }
+      .app-main {
+        padding: 0;
+        max-width: 100%;
+      }
+      .panel {
+        border: none;
+      }
+      .panel-header {
+        border-bottom: 2px solid #000;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- brand header -->
+  <header class="app-header">
+    <div class="brand-block">
+      <div class="brand-icon-box" title="Mazbay Wood Artisanal Moon Emblem">
+        <svg viewBox="0 0 100 100" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="walnutWood" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#935b30" />
+              <stop offset="35%" stop-color="#73421d" />
+              <stop offset="70%" stop-color="#8b5327" />
+              <stop offset="100%" stop-color="#552c0f" />
+            </linearGradient>
+            <linearGradient id="bevelLight" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d8ab7f" stop-opacity="0.8" />
+              <stop offset="100%" stop-color="#3d1f08" stop-opacity="0.9" />
+            </linearGradient>
+            <filter id="carved" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0.4" dy="0.6" stdDeviation="0.4" flood-color="#2a1405" flood-opacity="0.9" />
+            </filter>
+          </defs>
+          <path d="M 51 10 C 31 10, 14 27, 14 49 C 14 71, 30 87, 50 87 C 65 87, 76 77, 81 57 C 66 69, 47 70, 36 58 C 27 46, 29 26, 51 10 Z"
+                fill="url(#walnutWood)" stroke="url(#bevelLight)" stroke-width="1.2" />
+          <g filter="url(#carved)" fill="#351a06" font-family="Arial, Helvetica, sans-serif" font-weight="bold">
+            <text x="44" y="66" font-size="13" text-anchor="middle" letter-spacing="-0.5">MB</text>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Mazbay Wood</div>
+        <div class="brand-subtitle">Retail Stock Management System</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="currency-badge">
+        <span>AED (Dirhams)</span>
+      </div>
+      <div class="clock-badge">
+        <span id="liveClockText">Loading time...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- navigation tabs -->
+  <nav class="nav-container">
+    <button class="nav-tab active" data-tab="tab-inventory">Stock Master</button>
+    <button class="nav-tab" data-tab="tab-add-item">Add New Stock</button>
+    <button class="nav-tab" data-tab="tab-allocation">Order Allocation</button>
+    <button class="nav-tab" data-tab="tab-report">Valuation &amp; Stock Report</button>
+    <button class="nav-tab" data-tab="tab-categories">Category Manager &amp; Settings</button>
+  </nav>
+
+  <!-- main workspace -->
+  <main class="app-main">
+
+    <!-- top metrics summary bar -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Total Inventory Value</span>
+        <span class="metric-value" id="kpiTotalValuation">AED 0.00</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Active SKUs</span>
+        <span class="metric-value" id="kpiTotalSkus">0</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Units on Hand</span>
+        <span class="metric-value" id="kpiTotalOnHand">0</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Allocated to Orders</span>
+        <span class="metric-value" id="kpiTotalAllocated">0</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Available for Sale</span>
+        <span class="metric-value" id="kpiTotalAvailable">0</span>
+      </div>
+    </section>
+
+    <!-- TAB 1: Stock Master / Inventory Table -->
+    <section id="tab-inventory" class="tab-panel active">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Current Furniture Inventory</div>
+          <div class="toolbar-row">
+            <div class="search-input-wrap">
+              <span class="material-symbols-outlined">search</span>
+              <input type="text" id="inventorySearchInput" placeholder="Search by item name or SKU code..." />
+            </div>
+            <!-- Category options populated dynamically without hardcoding -->
+            <select id="categoryFilterSelect" class="filter-select">
+              <option value="ALL">All Categories</option>
+            </select>
+            <select id="stockStatusFilterSelect" class="filter-select">
+              <option value="ALL">All Stock Statuses</option>
+              <option value="IN_STOCK">In Stock</option>
+              <option value="LOW_STOCK">Low Stock (≤ 3)</option>
+              <option value="OUT_OF_STOCK">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>SKU Code</th>
+                <th>Item Name</th>
+                <th>Category</th>
+                <th style="text-align: right;">Unit Price (AED)</th>
+                <th style="text-align: center;">On Hand</th>
+                <th style="text-align: center;">Allocated</th>
+                <th style="text-align: center;">Available</th>
+                <th style="text-align: right;">Valuation (AED)</th>
+                <th>Status</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <!-- rendered dynamically via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Add New Stock Form -->
+    <section id="tab-add-item" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Register New Stock Item</div>
+        </div>
+        <div class="panel-body">
+          <form id="addStockForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="newItemName">Furniture Item Name *</label>
+                <input type="text" id="newItemName" class="form-control" placeholder="e.g. Dining Table, Coffee Table, Bookshelf" required />
+                <span class="form-hint">Descriptive retail title for showroom and catalog.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemCategory">Furniture Category *</label>
+                <!-- populated dynamically from user-managed categories without hardcoding -->
+                <select id="newItemCategory" class="form-control" required>
+                  <option value="">Select Category...</option>
+                </select>
+                <span class="form-hint">Manage or add new categories in the Category Manager tab.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemQuantity">Initial Quantity (Units) *</label>
+                <input type="number" id="newItemQuantity" class="form-control" min="1" step="1" value="10" required />
+                <span class="form-hint">Physical units received into warehouse stock.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemPrice">Unit Price (AED) *</label>
+                <input type="number" id="newItemPrice" class="form-control" min="0.01" step="0.01" value="1250.00" required />
+                <span class="form-hint">Standard retail selling/valuation price in United Arab Emirates Dirham (AED).</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemCustomSku">Custom SKU (Optional)</label>
+                <input type="text" id="newItemCustomSku" class="form-control" placeholder="Leave empty for auto-generation (e.g. MW-LIV-007)" />
+                <span class="form-hint">Auto-generated with store prefix if left blank.</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="btn btn-secondary">Reset Form</button>
+              <button type="submit" class="btn btn-primary">Add Item to Inventory</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Stock Allocation Management -->
+    <section id="tab-allocation" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Allocate Stock to Customer Order</div>
+        </div>
+        <div class="panel-body">
+          <form id="allocateStockForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="allocItemSelect">Select Furniture Item *</label>
+                <select id="allocItemSelect" class="form-control" required>
+                  <option value="">Select an item to allocate...</option>
+                </select>
+                <span class="form-hint" id="allocItemAvailableHint">Select an item to see current available stock balance.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="allocQuantity">Quantity to Allocate *</label>
+                <input type="number" id="allocQuantity" class="form-control" min="1" step="1" value="1" required />
+                <span class="form-hint">Cannot exceed available balance (Overselling strictly prevented).</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="allocCustomerRef">Customer Name / Reference *</label>
+                <input type="text" id="allocCustomerRef" class="form-control" placeholder="e.g. Tariq Al-Mansoor (Dubai Marina)" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="allocOrderNumber">Sales Order # *</label>
+                <input type="text" id="allocOrderNumber" class="form-control" placeholder="e.g. SO-8492" required />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Confirm Order Allocation</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- active allocation records table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Order Allocation Log</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Allocation ID</th>
+                <th>Order #</th>
+                <th>Customer Reference</th>
+                <th>Item &amp; SKU</th>
+                <th style="text-align: center;">Allocated Qty</th>
+                <th>Allocation Date</th>
+                <th>Status</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allocationsTableBody">
+              <!-- populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Stock Valuation & Summary Report -->
+    <section id="tab-report" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Official Inventory &amp; Financial Valuation Report (AED)</div>
+          <div class="no-print" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="refreshReportBtn">Regenerate</button>
+            <!-- Primary PDF Download Action -->
+            <button class="btn btn-primary" id="downloadPdfReportBtn">Download PDF Report</button>
+            <button class="btn btn-secondary" id="printReportBtn">Print View</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="report-meta-box">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="brand-icon-box" style="width: 38px; height: 38px;">
+                <svg viewBox="0 0 100 100" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 51 10 C 31 10, 14 27, 14 49 C 14 71, 30 87, 50 87 C 65 87, 76 77, 81 57 C 66 69, 47 70, 36 58 C 27 46, 29 26, 51 10 Z"
+                        fill="#73421d" stroke="#d8ab7f" stroke-width="1.5" />
+                  <text x="44" y="66" font-size="14" font-family="Arial, sans-serif" font-weight="bold" fill="#351a06" text-anchor="middle">MB</text>
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 15px; color: #0f172a;">MAZBAY WOOD - RETAIL AUDIT REPORT</div>
+                <div style="font-size: 12px; color: #64748b;">Comprehensive stock ledger and valuation summary in UAE Dirham (AED)</div>
+              </div>
+            </div>
+            <div class="report-date-tag">
+              Report Generated Date &amp; Time: <span class="report-date-value" id="reportGeneratedTimestamp">--</span>
+            </div>
+          </div>
+
+          <!-- summary metrics table for the report -->
+          <div class="table-responsive" style="margin-bottom: 24px;">
+            <table class="data-table" style="border: 1px solid #e2e8f0;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th>Total Active SKUs</th>
+                  <th style="text-align: center;">Total Units On Hand</th>
+                  <th style="text-align: center;">Total Allocated Units</th>
+                  <th style="text-align: center;">Total Available Units</th>
+                  <th style="text-align: right;">Total Financial Valuation (AED)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight: 700; font-size: 15px;" id="rptTotalSkus">0</td>
+                  <td style="text-align: center; font-weight: 700; font-size: 15px;" id="rptTotalOnHand">0</td>
+                  <td style="text-align: center; font-weight: 700; font-size: 15px; color: #475569;" id="rptTotalAllocated">0</td>
+                  <td style="text-align: center; font-weight: 700; font-size: 15px; color: #166534;" id="rptTotalAvailable">0</td>
+                  <td style="text-align: right; font-weight: 700; font-size: 16px; color: #0f172a;" id="rptTotalValuation">AED 0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- detailed valuation per category breakdown -->
+          <div style="margin-top: 24px;">
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #334155;">
+              Category Valuation &amp; Unit Breakdown (AED)
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th style="text-align: center;">SKU Count</th>
+                    <th style="text-align: center;">On Hand Units</th>
+                    <th style="text-align: center;">Allocated Units</th>
+                    <th style="text-align: center;">Available Units</th>
+                    <th style="text-align: right;">Category Valuation (AED)</th>
+                  </tr>
+                </thead>
+                <tbody id="reportCategoryTableBody">
+                  <!-- dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Category Manager & Administrative Settings -->
+    <section id="tab-categories" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Add New Furniture Category</div>
+        </div>
+        <div class="panel-body">
+          <form id="addCategoryForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="newCategoryName">Category Name *</label>
+                <input type="text" id="newCategoryName" class="form-control" placeholder="e.g. Outdoor & Patio, Lighting, Kitchen & Bar" required />
+                <span class="form-hint">Category will immediately appear across all filters, product forms, and reports.</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="newCategorySkuPrefix">SKU Prefix (Optional)</label>
+                <input type="text" id="newCategorySkuPrefix" class="form-control" placeholder="e.g. MW-OUT, MW-LGT (3 to 6 uppercase letters)" />
+                <span class="form-hint">Used for automatic SKU generation. Defaults to MW-CAT if omitted.</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Create Category</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Current Categories Administrative List -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Active Inventory Categories</div>
+          <div style="font-size: 12px; color: #64748b;">
+            Categories dynamically populate all selection menus.
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Category Name</th>
+                <th>SKU Prefix</th>
+                <th style="text-align: center;">Associated SKUs</th>
+                <th style="text-align: center;">Total Units On Hand</th>
+                <th style="text-align: right;">Category Value (AED)</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody">
+              <!-- populated dynamically via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- QUICK RESTOCK MODAL -->
+  <div class="modal-overlay" id="restockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Restock Inventory</div>
+        <button class="modal-close-btn" data-close-modal="restockModal" aria-label="Close modal">
+          <span style="font-size: 20px; line-height: 1;">&times;</span>
+        </button>
+      </div>
+      <form id="restockModalForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalRestockItemCode" />
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b;">Furniture Item</div>
+            <div id="modalRestockItemName" style="font-size: 15px; font-weight: 700; color: #0f172a;"></div>
+            <div id="modalRestockItemSku" class="sku-code" style="display: inline-block; margin-top: 4px;"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modalRestockQty">Units Received to Add *</label>
+            <input type="number" id="modalRestockQty" class="form-control" min="1" step="1" value="5" required />
+            <span class="form-hint">Physical quantity arriving from workshop into warehouse.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="restockModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Restock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADJUST / EDIT STOCK MODAL -->
+  <div class="modal-overlay" id="adjustStockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Adjust Stock Levels</div>
+        <button class="modal-close-btn" data-close-modal="adjustStockModal" aria-label="Close modal">
+          <span style="font-size: 20px; line-height: 1;">&times;</span>
+        </button>
+      </div>
+      <form id="adjustStockModalForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalAdjustItemCode" />
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b;">Furniture Item</div>
+            <div id="modalAdjustItemName" style="font-size: 15px; font-weight: 700; color: #0f172a;"></div>
+            <div id="modalAdjustItemSku" class="sku-code" style="display: inline-block; margin-top: 4px;"></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+            <div>
+              <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Current On Hand</div>
+              <div id="modalAdjustCurrentOnHand" style="font-size: 16px; font-weight: 700; color: #0f172a;">0</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Allocated to Orders</div>
+              <div id="modalAdjustCurrentAllocated" style="font-size: 16px; font-weight: 700; color: #475569;">0</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="modalAdjustNewTotal">Set New Total Physical Stock (On Hand) *</label>
+            <input type="number" id="modalAdjustNewTotal" class="form-control" min="0" step="1" required />
+            <span class="form-hint" id="modalAdjustMinWarning">Minimum allowed is currently allocated units to prevent overselling.</span>
+          </div>
+
+          <div style="margin-top: 14px; font-size: 13px; color: #334155; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 4px;">
+            Resulting Available to Sell: <strong id="modalAdjustProjectedAvailable" style="color: #166534;">0</strong> unit(s)
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="adjustStockModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Stock Balance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- QUICK ALLOCATE MODAL -->
+  <div class="modal-overlay" id="quickAllocateModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Allocate Stock Item</div>
+        <button class="modal-close-btn" data-close-modal="quickAllocateModal" aria-label="Close modal">
+          <span style="font-size: 20px; line-height: 1;">&times;</span>
+        </button>
+      </div>
+      <form id="quickAllocateModalForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalAllocItemCode" />
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b;">Allocating Furniture</div>
+            <div id="modalAllocItemName" style="font-size: 15px; font-weight: 700; color: #0f172a;"></div>
+            <div style="font-size: 13px; color: #475569; margin-top: 4px;">
+              Available Balance: <strong id="modalAllocAvailableCount" style="color: #166534;">0</strong> units
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalAllocQty">Quantity to Reserve *</label>
+            <input type="number" id="modalAllocQty" class="form-control" min="1" step="1" value="1" required />
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalAllocCustomer">Customer Name *</label>
+            <input type="text" id="modalAllocCustomer" class="form-control" placeholder="e.g. Fatima Al-Zahra" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modalAllocOrder">Order Number *</label>
+            <input type="text" id="modalAllocOrder" class="form-control" placeholder="e.g. SO-9102" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="quickAllocateModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Allocation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast notification system container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JAVASCRIPT OBJECT-ORIENTED ENGINE -->
+  <script>
+    // checking that everything loads cleanly and setting up our business classes
+
+    /**
+     * FurnitureItem class encapsulating item details, stock quantities, and valuations in AED.
+     */
+    class FurnitureItem {
+      constructor(itemCode, name, category, stockLevel, allocatedCount = 0, unitPrice = 0, dateAdded = null) {
+        this.itemCode = itemCode;
+        this.name = name;
+        this.category = category;
+        this.stockLevel = Number(stockLevel) || 0;
+        this.allocatedCount = Number(allocatedCount) || 0;
+        this.unitPrice = Number(unitPrice) || 0;
+        this.dateAdded = dateAdded || new Date().toISOString();
+      }
+
+      // calculate how many physical units are free to sell right now
+      getAvailableStock() {
+        return Math.max(0, this.stockLevel - this.allocatedCount);
+      }
+
+      // verify if a requested allocation quantity is permissible without overselling
+      canAllocate(requestedQty) {
+        const qty = Number(requestedQty);
+        return qty > 0 && qty <= this.getAvailableStock();
+      }
+
+      // allocating items to a customer order
+      allocate(qty) {
+        const count = Number(qty);
+        if (!this.canAllocate(count)) {
+          return false;
+        }
+        this.allocatedCount += count;
+        return true;
+      }
+
+      // releasing an allocation back to general stock if customer cancels
+      deallocate(qty) {
+        const count = Number(qty);
+        this.allocatedCount = Math.max(0, this.allocatedCount - count);
+      }
+
+      // dispatching order items out of the warehouse completely
+      dispatch(qty) {
+        const count = Number(qty);
+        this.allocatedCount = Math.max(0, this.allocatedCount - count);
+        this.stockLevel = Math.max(0, this.stockLevel - count);
+      }
+
+      // adding brand new units when a fresh shipment arrives
+      restock(qty) {
+        const count = Number(qty);
+        if (count > 0) {
+          this.stockLevel += count;
+        }
+      }
+
+      // directly editing available stock count while ensuring allocated orders stay protected
+      setStockLevel(newLevel) {
+        const target = Number(newLevel);
+        if (isNaN(target) || target < 0) {
+          throw new Error('Stock level must be a non-negative number.');
+        }
+        if (target < this.allocatedCount) {
+          throw new Error(`Cannot set stock below ${this.allocatedCount} units, because ${this.allocatedCount} unit(s) are actively reserved for existing customer orders.`);
+        }
+        this.stockLevel = target;
+      }
+
+      // computing full financial valuation in AED of physical on-hand stock
+      getTotalValuation() {
+        return this.stockLevel * this.unitPrice;
+      }
+
+      // computing valuation in AED tied up in allocated customer reservations
+      getAllocatedValuation() {
+        return this.allocatedCount * this.unitPrice;
+      }
+
+      // computing valuation in AED of stock ready for immediate retail purchase
+      getAvailableValuation() {
+        return this.getAvailableStock() * this.unitPrice;
+      }
+
+      // determining inventory status badge
+      getStatus() {
+        const available = this.getAvailableStock();
+        if (this.stockLevel === 0 || available === 0) {
+          return { label: 'Out of Stock', cssClass: 'badge-out-of-stock' };
+        }
+        if (available <= 3) {
+          return { label: 'Low Stock', cssClass: 'badge-low-stock' };
+        }
+        return { label: 'In Stock', cssClass: 'badge-in-stock' };
+      }
+    }
+
+    /**
+     * OrderAllocation class capturing each individual customer order reservation.
+     */
+    class OrderAllocation {
+      constructor(id, itemCode, customerRef, orderNumber, quantity, date = null, status = 'ACTIVE') {
+        this.id = id;
+        this.itemCode = itemCode;
+        this.customerRef = customerRef;
+        this.orderNumber = orderNumber;
+        this.quantity = Number(quantity);
+        this.date = date || new Date().toISOString();
+        this.status = status; // 'ACTIVE', 'DISPATCHED', 'CANCELLED'
+      }
+    }
+
+    /**
+     * InventoryManager class managing the collection of furniture items, categories, and order allocations.
+     */
+    class InventoryManager {
+      constructor() {
+        this.storageKeyItems = 'mazbay_wood_items_aed_v5';
+        this.storageKeyAllocations = 'mazbay_wood_allocations_aed_v5';
+        this.storageKeyCategories = 'mazbay_wood_categories_v5';
+
+        this.items = new Map();
+        this.allocations = [];
+        this.categories = []; // list of { name, prefix }
+
+        this.loadFromStorage();
+      }
+
+      // grabbing saved data from localStorage or initializing baseline furniture pieces & categories
+      loadFromStorage() {
+        try {
+          const storedCategories = localStorage.getItem(this.storageKeyCategories);
+          const storedItems = localStorage.getItem(this.storageKeyItems);
+          const storedAllocations = localStorage.getItem(this.storageKeyAllocations);
+
+          // loading user-managed categories
+          if (storedCategories) {
+            this.categories = JSON.parse(storedCategories);
+          } else {
+            this.seedInitialCategories();
+          }
+
+          if (storedItems) {
+            const raw = JSON.parse(storedItems);
+            raw.forEach(data => {
+              const item = new FurnitureItem(
+                data.itemCode,
+                data.name,
+                data.category,
+                data.stockLevel,
+                data.allocatedCount,
+                data.unitPrice,
+                data.dateAdded
+              );
+              this.items.set(item.itemCode, item);
+            });
+          } else {
+            // initial showroom inventory for Mazbay Wood priced in AED
+            this.seedInitialInventory();
+          }
+
+          if (storedAllocations) {
+            const rawAlloc = JSON.parse(storedAllocations);
+            this.allocations = rawAlloc.map(a => new OrderAllocation(
+              a.id,
+              a.itemCode,
+              a.customerRef,
+              a.orderNumber,
+              a.quantity,
+              a.date,
+              a.status
+            ));
+          } else {
+            this.seedInitialAllocations();
+          }
+        } catch (err) {
+          console.error('Error loading inventory data:', err);
+          this.seedInitialCategories();
+          this.seedInitialInventory();
+        }
+      }
+
+      // saving our stock state and custom categories to localStorage
+      saveToStorage() {
+        try {
+          const itemsArray = Array.from(this.items.values());
+          localStorage.setItem(this.storageKeyItems, JSON.stringify(itemsArray));
+          localStorage.setItem(this.storageKeyAllocations, JSON.stringify(this.allocations));
+          localStorage.setItem(this.storageKeyCategories, JSON.stringify(this.categories));
+        } catch (err) {
+          console.error('Error saving inventory data:', err);
+        }
+      }
+
+      // seeding standard furniture store categories
+      seedInitialCategories() {
+        this.categories = [
+          { name: 'Living Room', prefix: 'MW-LIV' },
+          { name: 'Dining Room', prefix: 'MW-DIN' },
+          { name: 'Bedroom', prefix: 'MW-BED' },
+          { name: 'Home Office', prefix: 'MW-OFF' },
+          { name: 'Storage & Accents', prefix: 'MW-ACC' },
+          { name: 'Outdoor & Patio', prefix: 'MW-OUT' }
+        ];
+        this.saveToStorage();
+      }
+
+      // setting up clear, everyday furniture stock records for Mazbay Wood with AED pricing
+      seedInitialInventory() {
+        const seedData = [
+          new FurnitureItem('MW-DIN-001', 'Dining Table', 'Dining Room', 12, 3, 3200.00),
+          new FurnitureItem('MW-LIV-002', 'TV Console Cabinet', 'Living Room', 8, 2, 4250.00),
+          new FurnitureItem('MW-LIV-003', 'Lounge Armchair', 'Living Room', 15, 4, 1850.00),
+          new FurnitureItem('MW-BED-004', 'Queen Bed Frame', 'Bedroom', 6, 1, 3600.00),
+          new FurnitureItem('MW-OFF-005', 'Office Study Desk', 'Home Office', 10, 2, 2150.00),
+          new FurnitureItem('MW-ACC-006', '5-Tier Bookshelf', 'Storage & Accents', 5, 0, 2650.00),
+          new FurnitureItem('MW-DIN-007', 'Dining Chairs (Set of 2)', 'Dining Room', 18, 6, 1200.00),
+          new FurnitureItem('MW-BED-008', 'Bedside Nightstand', 'Bedroom', 3, 2, 890.00)
+        ];
+        seedData.forEach(item => this.items.set(item.itemCode, item));
+        this.saveToStorage();
+      }
+
+      // seeding a couple of active allocations
+      seedInitialAllocations() {
+        this.allocations = [
+          new OrderAllocation('ALC-1001', 'MW-DIN-001', 'Tariq Al-Mansoor', 'SO-7841', 2, new Date(Date.now() - 86400000).toISOString(), 'ACTIVE'),
+          new OrderAllocation('ALC-1002', 'MW-LIV-003', 'Hassan Bin Rashid', 'SO-7845', 2, new Date(Date.now() - 43200000).toISOString(), 'ACTIVE')
+        ];
+        this.saveToStorage();
+      }
+
+      // Category management: dynamically adding a new category
+      addCategory(categoryName, customPrefix = '') {
+        const name = categoryName.trim();
+        if (!name) {
+          throw new Error('Category name cannot be empty.');
+        }
+
+        const exists = this.categories.some(c => c.name.toLowerCase() === name.toLowerCase());
+        if (exists) {
+          throw new Error(`Category "${name}" already exists.`);
+        }
+
+        // generate clean SKU prefix if not provided
+        let prefix = customPrefix.trim().toUpperCase();
+        if (!prefix) {
+          const clean = name.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+          prefix = `MW-${clean || 'GEN'}`;
+        } else if (!prefix.startsWith('MW-')) {
+          prefix = `MW-${prefix}`;
+        }
+
+        const newCat = { name, prefix };
+        this.categories.push(newCat);
+        this.saveToStorage();
+        return newCat;
+      }
+
+      // Category management: deleting a category with safety check
+      deleteCategory(categoryName) {
+        // checking if any active inventory items belong to this category
+        const associatedItems = Array.from(this.items.values()).filter(item => item.category === categoryName);
+        if (associatedItems.length > 0) {
+          throw new Error(`Cannot delete "${categoryName}" because ${associatedItems.length} inventory item(s) are currently categorized under it. Please reassign or delete these items first.`);
+        }
+
+        const initialCount = this.categories.length;
+        this.categories = this.categories.filter(c => c.name !== categoryName);
+        if (this.categories.length === initialCount) {
+          throw new Error(`Category "${categoryName}" was not found.`);
+        }
+
+        this.saveToStorage();
+        return true;
+      }
+
+      // helper to get all registered categories
+      getCategories() {
+        return this.categories;
+      }
+
+      // helper to generate clean sequential SKU codes based on category
+      generateSku(category) {
+        const catObj = this.categories.find(c => c.name === category);
+        const prefix = catObj ? catObj.prefix : 'MW-GEN';
+
+        let count = 1;
+        this.items.forEach(item => {
+          if (item.category === category) count++;
+        });
+        const numStr = String(count).padStart(3, '0');
+        let candidate = `${prefix}-${numStr}`;
+        while (this.items.has(candidate)) {
+          count++;
+          candidate = `${prefix}-${String(count).padStart(3, '0')}`;
+        }
+        return candidate;
+      }
+
+      // business logic: adding new stock
+      addStock(name, category, initialQuantity, unitPrice, customCode = '') {
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+          throw new Error('Item name cannot be empty.');
+        }
+        const qty = Number(initialQuantity);
+        if (isNaN(qty) || qty < 0) {
+          throw new Error('Initial quantity must be a non-negative number.');
+        }
+        const price = Number(unitPrice);
+        if (isNaN(price) || price < 0) {
+          throw new Error('Unit price must be a valid positive amount in AED.');
+        }
+
+        let code = (customCode && customCode.trim()) ? customCode.trim().toUpperCase() : this.generateSku(category);
+        if (this.items.has(code)) {
+          throw new Error(`SKU Code "${code}" already exists in the system.`);
+        }
+
+        const newItem = new FurnitureItem(code, trimmedName, category, qty, 0, price);
+        this.items.set(code, newItem);
+        this.saveToStorage();
+        return newItem;
+      }
+
+      // business logic: allocating stock to customer orders with overselling prevention
+      allocateStock(itemCode, quantity, orderNumber, customerRef) {
+        const item = this.items.get(itemCode);
+        if (!item) {
+          return { success: false, message: `Item code ${itemCode} was not found.` };
+        }
+
+        const qty = Number(quantity);
+        if (isNaN(qty) || qty <= 0) {
+          return { success: false, message: 'Allocation quantity must be greater than zero.' };
+        }
+
+        // making sure we don't accidentally oversell stock because that would be a headache
+        const available = item.getAvailableStock();
+        if (qty > available) {
+          return {
+            success: false,
+            message: `Overselling Prevented: Order requires ${qty} unit(s) of "${item.name}", but only ${available} unit(s) are currently available in stock.`
+          };
+        }
+
+        // perform allocation on the item
+        const allocatedOk = item.allocate(qty);
+        if (!allocatedOk) {
+          return { success: false, message: 'Could not allocate stock due to balance constraints.' };
+        }
+
+        // record allocation log
+        const allocId = 'ALC-' + Math.floor(1000 + Math.random() * 9000);
+        const newAllocation = new OrderAllocation(
+          allocId,
+          item.itemCode,
+          customerRef.trim(),
+          orderNumber.trim(),
+          qty
+        );
+        this.allocations.unshift(newAllocation);
+        this.saveToStorage();
+
+        return {
+          success: true,
+          message: `Successfully allocated ${qty} unit(s) of "${item.name}" to Order #${orderNumber}.`,
+          allocation: newAllocation
+        };
+      }
+
+      // releasing an active allocation back to available stock
+      cancelAllocation(allocationId) {
+        const alloc = this.allocations.find(a => a.id === allocationId);
+        if (!alloc || alloc.status !== 'ACTIVE') {
+          return { success: false, message: 'Allocation record not eligible for cancellation.' };
+        }
+
+        const item = this.items.get(alloc.itemCode);
+        if (item) {
+          item.deallocate(alloc.quantity);
+        }
+        alloc.status = 'CANCELLED';
+        this.saveToStorage();
+        return { success: true, message: `Allocation ${allocationId} cancelled and stock returned to available balance.` };
+      }
+
+      // dispatching an order out for delivery (reduces stockLevel & allocation)
+      dispatchAllocation(allocationId) {
+        const alloc = this.allocations.find(a => a.id === allocationId);
+        if (!alloc || alloc.status !== 'ACTIVE') {
+          return { success: false, message: 'Allocation record not active.' };
+        }
+
+        const item = this.items.get(alloc.itemCode);
+        if (item) {
+          item.dispatch(alloc.quantity);
+        }
+        alloc.status = 'DISPATCHED';
+        this.saveToStorage();
+        return { success: true, message: `Order #${alloc.orderNumber} marked as dispatched. Stock levels deducted.` };
+      }
+
+      // restocking an item in inventory
+      restockItem(itemCode, quantity) {
+        const item = this.items.get(itemCode);
+        if (!item) {
+          return { success: false, message: 'Item not found.' };
+        }
+        const qty = Number(quantity);
+        if (isNaN(qty) || qty <= 0) {
+          return { success: false, message: 'Restock quantity must be positive.' };
+        }
+        item.restock(qty);
+        this.saveToStorage();
+        return { success: true, message: `Added ${qty} units to "${item.name}". New on-hand balance: ${item.stockLevel}.` };
+      }
+
+      // editing how much physical stock is on hand (directly adjusting available balance)
+      editStock(itemCode, newStockLevel) {
+        const item = this.items.get(itemCode);
+        if (!item) {
+          return { success: false, message: 'Item not found.' };
+        }
+        try {
+          item.setStockLevel(newStockLevel);
+          this.saveToStorage();
+          return {
+            success: true,
+            message: `Updated "${item.name}" stock level to ${item.stockLevel} units. Current available for sale: ${item.getAvailableStock()} units.`
+          };
+        } catch (err) {
+          return { success: false, message: err.message };
+        }
+      }
+
+      // calculating available balance
+      calculateAvailableBalance(itemCode) {
+        const item = this.items.get(itemCode);
+        return item ? item.getAvailableStock() : 0;
+      }
+
+      // generate detailed stock report with current date and valuation calculations in AED
+      generateStockReport() {
+        const items = Array.from(this.items.values());
+        let totalUnitsOnHand = 0;
+        let totalAllocatedUnits = 0;
+        let totalAvailableUnits = 0;
+        let totalValuation = 0;
+
+        const categoryStats = {};
+
+        // initialize stats for all registered categories
+        this.categories.forEach(cat => {
+          categoryStats[cat.name] = {
+            category: cat.name,
+            skuCount: 0,
+            onHand: 0,
+            allocated: 0,
+            available: 0,
+            valuation: 0
+          };
+        });
+
+        items.forEach(item => {
+          totalUnitsOnHand += item.stockLevel;
+          totalAllocatedUnits += item.allocatedCount;
+          totalAvailableUnits += item.getAvailableStock();
+          totalValuation += item.getTotalValuation();
+
+          if (!categoryStats[item.category]) {
+            categoryStats[item.category] = {
+              category: item.category,
+              skuCount: 0,
+              onHand: 0,
+              allocated: 0,
+              available: 0,
+              valuation: 0
+            };
+          }
+          const cat = categoryStats[item.category];
+          cat.skuCount += 1;
+          cat.onHand += item.stockLevel;
+          cat.allocated += item.allocatedCount;
+          cat.available += item.getAvailableStock();
+          cat.valuation += item.getTotalValuation();
+        });
+
+        const reportDate = new Date();
+        const formattedDate = reportDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) + ' at ' + reportDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+
+        return {
+          totalSkus: items.length,
+          totalUnitsOnHand,
+          totalAllocatedUnits,
+          totalAvailableUnits,
+          totalValuation,
+          categoryBreakdown: Object.values(categoryStats),
+          generatedDate: formattedDate
+        };
+      }
+
+      // search and filter helper
+      filterItems(query = '', category = 'ALL', stockStatus = 'ALL') {
+        const q = query.trim().toLowerCase();
+        return Array.from(this.items.values()).filter(item => {
+          const matchesQuery = !q || item.name.toLowerCase().includes(q) || item.itemCode.toLowerCase().includes(q);
+          const matchesCategory = category === 'ALL' || item.category === category;
+          let matchesStatus = true;
+          const available = item.getAvailableStock();
+
+          if (stockStatus === 'IN_STOCK') {
+            matchesStatus = available > 3;
+          } else if (stockStatus === 'LOW_STOCK') {
+            matchesStatus = available > 0 && available <= 3;
+          } else if (stockStatus === 'OUT_OF_STOCK') {
+            matchesStatus = available === 0;
+          }
+
+          return matchesQuery && matchesCategory && matchesStatus;
+        });
+      }
+    }
+
+    /**
+     * UIManager class coordinating user interactions, DOM updates, notifications and modals.
+     */
+    class UIManager {
+      constructor(inventoryManager) {
+        this.manager = inventoryManager;
+        this.currentTab = 'tab-inventory';
+        this.init();
+      }
+
+      init() {
+        this.setupNavigation();
+        this.setupForms();
+        this.setupModals();
+        this.setupFilters();
+        this.startClock();
+        this.renderAll();
+      }
+
+      // keeping the time badge ticking
+      startClock() {
+        const update = () => {
+          const now = new Date();
+          const el = document.getElementById('liveClockText');
+          if (el) {
+            el.textContent = now.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            }) + ' - ' + now.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+          }
+        };
+        update();
+        setInterval(update, 1000);
+      }
+
+      // switching between dashboard tabs
+      setupNavigation() {
+        const tabs = document.querySelectorAll('.nav-tab');
+        tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            const targetId = tab.getAttribute('data-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+              panel.style.display = panel.id === targetId ? 'block' : 'none';
+            });
+            this.currentTab = targetId;
+
+            if (targetId === 'tab-report') {
+              this.renderReportView();
+            } else if (targetId === 'tab-allocation') {
+              this.populateAllocationDropdown();
+              this.renderAllocationsTable();
+            } else if (targetId === 'tab-categories') {
+              this.renderCategoriesTable();
+            }
+          });
+        });
+      }
+
+      // wiring up forms and report export actions
+      setupForms() {
+        // Form: Add New Stock
+        const addForm = document.getElementById('addStockForm');
+        if (addForm) {
+          addForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // grabbing the form values here so we can build the new item
+            const name = document.getElementById('newItemName').value;
+            const category = document.getElementById('newItemCategory').value;
+            const qty = document.getElementById('newItemQuantity').value;
+            const price = document.getElementById('newItemPrice').value;
+            const customSku = document.getElementById('newItemCustomSku').value;
+
+            try {
+              const newItem = this.manager.addStock(name, category, qty, price, customSku);
+              this.showToast('success', 'Stock Added', `Registered "${newItem.name}" under SKU [${newItem.itemCode}] at ${this.formatCurrency(newItem.unitPrice)}.`);
+              addForm.reset();
+              this.renderAll();
+
+              // jump back to inventory view to see new row
+              const invTabBtn = document.querySelector('[data-tab="tab-inventory"]');
+              if (invTabBtn) invTabBtn.click();
+            } catch (err) {
+              this.showToast('error', 'Registration Error', err.message);
+            }
+          });
+        }
+
+        // Form: Add New Category
+        const addCatForm = document.getElementById('addCategoryForm');
+        if (addCatForm) {
+          addCatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newCategoryName').value;
+            const prefix = document.getElementById('newCategorySkuPrefix').value;
+
+            try {
+              const newCat = this.manager.addCategory(name, prefix);
+              this.showToast('success', 'Category Created', `Added category "${newCat.name}" with prefix [${newCat.prefix}]. Selection dropdowns have been updated.`);
+              addCatForm.reset();
+              this.renderAll();
+            } catch (err) {
+              this.showToast('error', 'Category Error', err.message);
+            }
+          });
+        }
+
+        // Form: Allocate Stock
+        const allocForm = document.getElementById('allocateStockForm');
+        if (allocForm) {
+          allocForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const itemCode = document.getElementById('allocItemSelect').value;
+            const qty = document.getElementById('allocQuantity').value;
+            const customerRef = document.getElementById('allocCustomerRef').value;
+            const orderNum = document.getElementById('allocOrderNumber').value;
+
+            if (!itemCode) {
+              this.showToast('warning', 'Selection Required', 'Please select an item to allocate.');
+              return;
+            }
+
+            const result = this.manager.allocateStock(itemCode, qty, orderNum, customerRef);
+            if (result.success) {
+              this.showToast('success', 'Stock Allocated', result.message);
+              allocForm.reset();
+              this.updateAllocItemHint();
+              this.renderAll();
+            } else {
+              // displaying clean rejection notification for overselling attempts
+              this.showToast('error', 'Allocation Rejected', result.message);
+            }
+          });
+
+          // update hint dynamically when item changes
+          const itemSelect = document.getElementById('allocItemSelect');
+          itemSelect.addEventListener('change', () => this.updateAllocItemHint());
+        }
+
+        // Primary Action: Download PDF Report
+        const downloadPdfBtn = document.getElementById('downloadPdfReportBtn');
+        if (downloadPdfBtn) {
+          downloadPdfBtn.addEventListener('click', () => {
+            window.print();
+          });
+        }
+
+        // Print View button (with graceful fallback to PDF download if print dialog is restricted in iframe)
+        const printBtn = document.getElementById('printReportBtn');
+        if (printBtn) {
+          printBtn.addEventListener('click', () => {
+            window.print();
+          });
+        }
+
+        // Refresh Report button
+        const refreshReportBtn = document.getElementById('refreshReportBtn');
+        if (refreshReportBtn) {
+          refreshReportBtn.addEventListener('click', () => {
+            this.renderReportView();
+            this.showToast('info', 'Report Updated', 'Calculated latest inventory valuation in AED.');
+          });
+        }
+      }
+
+      // updating helper text for the selected item in the allocation form
+      updateAllocItemHint() {
+        const itemCode = document.getElementById('allocItemSelect').value;
+        const hintEl = document.getElementById('allocItemAvailableHint');
+        if (!itemCode) {
+          hintEl.textContent = 'Select an item to see current available stock balance.';
+          return;
+        }
+        const item = this.manager.items.get(itemCode);
+        if (item) {
+          const avail = item.getAvailableStock();
+          hintEl.innerHTML = `Available stock for this item: <strong>${avail}</strong> unit(s) (Total On Hand: ${item.stockLevel}, Allocated: ${item.allocatedCount}, Unit Price: ${this.formatCurrency(item.unitPrice)}).`;
+        }
+      }
+
+      // setting up filters & search inputs
+      setupFilters() {
+        const searchInput = document.getElementById('inventorySearchInput');
+        const catSelect = document.getElementById('categoryFilterSelect');
+        const statusSelect = document.getElementById('stockStatusFilterSelect');
+
+        const triggerFilter = () => {
+          this.renderInventoryTable();
+        };
+
+        if (searchInput) searchInput.addEventListener('input', triggerFilter);
+        if (catSelect) catSelect.addEventListener('change', triggerFilter);
+        if (statusSelect) statusSelect.addEventListener('change', triggerFilter);
+      }
+
+      // setting up modals for quick restocking, direct allocations, and stock editing
+      setupModals() {
+        // close buttons
+        document.querySelectorAll('[data-close-modal]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const modalId = btn.getAttribute('data-close-modal');
+            this.closeModal(modalId);
+          });
+        });
+
+        // Quick Restock Form Submission
+        const restockForm = document.getElementById('restockModalForm');
+        if (restockForm) {
+          restockForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = document.getElementById('modalRestockItemCode').value;
+            const qty = document.getElementById('modalRestockQty').value;
+            const res = this.manager.restockItem(code, qty);
+            if (res.success) {
+              this.showToast('success', 'Inventory Restocked', res.message);
+              this.closeModal('restockModal');
+              this.renderAll();
+            } else {
+              this.showToast('error', 'Restock Failed', res.message);
+            }
+          });
+        }
+
+        // Adjust Stock Level Form Submission (editing available physical stock)
+        const adjustForm = document.getElementById('adjustStockModalForm');
+        if (adjustForm) {
+          adjustForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = document.getElementById('modalAdjustItemCode').value;
+            const newTotal = document.getElementById('modalAdjustNewTotal').value;
+
+            const res = this.manager.editStock(code, newTotal);
+            if (res.success) {
+              this.showToast('success', 'Stock Balance Updated', res.message);
+              this.closeModal('adjustStockModal');
+              this.renderAll();
+            } else {
+              this.showToast('error', 'Stock Adjustment Rejected', res.message);
+            }
+          });
+
+          // live preview of projected available balance in the adjust modal
+          const inputNewTotal = document.getElementById('modalAdjustNewTotal');
+          inputNewTotal.addEventListener('input', () => {
+            const code = document.getElementById('modalAdjustItemCode').value;
+            const item = this.manager.items.get(code);
+            if (!item) return;
+            const targetVal = Number(inputNewTotal.value) || 0;
+            const projected = Math.max(0, targetVal - item.allocatedCount);
+            document.getElementById('modalAdjustProjectedAvailable').textContent = projected;
+          });
+        }
+
+        // Quick Allocate Form Submission
+        const quickAllocForm = document.getElementById('quickAllocateModalForm');
+        if (quickAllocForm) {
+          quickAllocForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = document.getElementById('modalAllocItemCode').value;
+            const qty = document.getElementById('modalAllocQty').value;
+            const customer = document.getElementById('modalAllocCustomer').value;
+            const order = document.getElementById('modalAllocOrder').value;
+
+            const res = this.manager.allocateStock(code, qty, order, customer);
+            if (res.success) {
+              this.showToast('success', 'Order Allocated', res.message);
+              this.closeModal('quickAllocateModal');
+              quickAllocForm.reset();
+              this.renderAll();
+            } else {
+              this.showToast('error', 'Allocation Rejected', res.message);
+            }
+          });
+        }
+      }
+
+      openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('open');
+      }
+
+      closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.remove('open');
+      }
+
+      // opening quick restock modal for a specific row
+      openRestockModal(itemCode) {
+        const item = this.manager.items.get(itemCode);
+        if (!item) return;
+        document.getElementById('modalRestockItemCode').value = item.itemCode;
+        document.getElementById('modalRestockItemName').textContent = item.name;
+        document.getElementById('modalRestockItemSku').textContent = item.itemCode;
+        document.getElementById('modalRestockQty').value = 5;
+        this.openModal('restockModal');
+      }
+
+      // opening adjust stock modal to edit physical on-hand and available balance
+      openAdjustStockModal(itemCode) {
+        const item = this.manager.items.get(itemCode);
+        if (!item) return;
+        document.getElementById('modalAdjustItemCode').value = item.itemCode;
+        document.getElementById('modalAdjustItemName').textContent = item.name;
+        document.getElementById('modalAdjustItemSku').textContent = item.itemCode;
+        document.getElementById('modalAdjustCurrentOnHand').textContent = item.stockLevel;
+        document.getElementById('modalAdjustCurrentAllocated').textContent = item.allocatedCount;
+
+        const inputNewTotal = document.getElementById('modalAdjustNewTotal');
+        inputNewTotal.value = item.stockLevel;
+        inputNewTotal.min = item.allocatedCount;
+
+        document.getElementById('modalAdjustMinWarning').textContent =
+          `Minimum allowed is ${item.allocatedCount} unit(s) to honor active customer orders.`;
+
+        document.getElementById('modalAdjustProjectedAvailable').textContent = item.getAvailableStock();
+        this.openModal('adjustStockModal');
+      }
+
+      // opening quick allocation modal for a specific row
+      openQuickAllocateModal(itemCode) {
+        const item = this.manager.items.get(itemCode);
+        if (!item) return;
+        document.getElementById('modalAllocItemCode').value = item.itemCode;
+        document.getElementById('modalAllocItemName').textContent = item.name;
+        document.getElementById('modalAllocAvailableCount').textContent = item.getAvailableStock();
+        document.getElementById('modalAllocQty').value = 1;
+        document.getElementById('modalAllocQty').max = item.getAvailableStock();
+        this.openModal('quickAllocateModal');
+      }
+
+      // toast notifications with zero emojis and clean Material Symbols
+      showToast(type, title, message) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const iconMap = {
+          success: 'check_circle',
+          error: 'error',
+          warning: 'warning',
+          info: 'info'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast-item toast-${type}`;
+        toast.innerHTML = `
+          <div class="toast-icon">
+            <span class="material-symbols-outlined">${iconMap[type] || 'info'}</span>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-msg">${message}</div>
+          </div>
+        `;
+
+        container.appendChild(toast);
+
+        // automatic cleanup after 4 seconds
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          toast.style.transition = 'all 0.2s ease-out';
+          setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+          }, 200);
+        }, 4000);
+      }
+
+      // formatting currency strictly in AED (United Arab Emirates Dirham)
+      formatCurrency(val) {
+        return 'AED ' + Number(val).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+
+      // dynamically populating all category select dropdowns without any hardcoding
+      populateCategoryDropdowns() {
+        const categories = this.manager.getCategories();
+
+        // 1. Inventory Table Filter Dropdown
+        const filterSelect = document.getElementById('categoryFilterSelect');
+        if (filterSelect) {
+          const currentFilter = filterSelect.value;
+          filterSelect.innerHTML = '<option value="ALL">All Categories</option>' +
+            categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+          if (currentFilter && (currentFilter === 'ALL' || categories.some(c => c.name === currentFilter))) {
+            filterSelect.value = currentFilter;
+          }
+        }
+
+        // 2. Add New Item Category Dropdown
+        const itemCatSelect = document.getElementById('newItemCategory');
+        if (itemCatSelect) {
+          const currentVal = itemCatSelect.value;
+          itemCatSelect.innerHTML = '<option value="">Select Category...</option>' +
+            categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+          if (currentVal && categories.some(c => c.name === currentVal)) {
+            itemCatSelect.value = currentVal;
+          }
+        }
+      }
+
+      // rendering the administrative categories list
+      renderCategoriesTable() {
+        const tbody = document.getElementById('categoriesTableBody');
+        if (!tbody) return;
+
+        const categories = this.manager.getCategories();
+        const items = Array.from(this.manager.items.values());
+
+        tbody.innerHTML = categories.map(cat => {
+          const catItems = items.filter(i => i.category === cat.name);
+          const totalUnits = catItems.reduce((acc, curr) => acc + curr.stockLevel, 0);
+          const totalVal = catItems.reduce((acc, curr) => acc + curr.getTotalValuation(), 0);
+
+          return `
+            <tr>
+              <td style="font-weight: 700; color: #0f172a;">${cat.name}</td>
+              <td><span class="sku-code">${cat.prefix}</span></td>
+              <td style="text-align: center; font-weight: 600;">${catItems.length}</td>
+              <td style="text-align: center;">${totalUnits}</td>
+              <td style="text-align: right; font-weight: 600;">${this.formatCurrency(totalVal)}</td>
+              <td style="text-align: center;">
+                <button class="btn btn-danger btn-sm" onclick="ui.handleDeleteCategory('${cat.name}')">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // deleting category with user feedback
+      handleDeleteCategory(categoryName) {
+        try {
+          this.manager.deleteCategory(categoryName);
+          this.showToast('info', 'Category Removed', `Category "${categoryName}" deleted. Dropdowns updated.`);
+          this.renderAll();
+        } catch (err) {
+          this.showToast('error', 'Cannot Delete Category', err.message);
+        }
+      }
+
+      // rendering the top KPI dashboard statistics
+      renderMetricsBar() {
+        const report = this.manager.generateStockReport();
+        document.getElementById('kpiTotalValuation').textContent = this.formatCurrency(report.totalValuation);
+        document.getElementById('kpiTotalSkus').textContent = report.totalSkus;
+        document.getElementById('kpiTotalOnHand').textContent = report.totalUnitsOnHand;
+        document.getElementById('kpiTotalAllocated').textContent = report.totalAllocatedUnits;
+        document.getElementById('kpiTotalAvailable').textContent = report.totalAvailableUnits;
+      }
+
+      // rendering the main furniture inventory table
+      renderInventoryTable() {
+        const tbody = document.getElementById('inventoryTableBody');
+        if (!tbody) return;
+
+        const searchVal = document.getElementById('inventorySearchInput')?.value || '';
+        const catVal = document.getElementById('categoryFilterSelect')?.value || 'ALL';
+        const statusVal = document.getElementById('stockStatusFilterSelect')?.value || 'ALL';
+
+        const filtered = this.manager.filterItems(searchVal, catVal, statusVal);
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="10">
+                <div class="empty-state">
+                  <div class="empty-title">No Matching Furniture Items</div>
+                  <div class="empty-desc">Try clearing the search query or adjusting the category filters.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(item => {
+          const status = item.getStatus();
+          const available = item.getAvailableStock();
+          return `
+            <tr>
+              <td><span class="sku-code">${item.itemCode}</span></td>
+              <td style="font-weight: 600;">${item.name}</td>
+              <td style="color: #64748b;">${item.category}</td>
+              <td style="text-align: right; font-weight: 600;">${this.formatCurrency(item.unitPrice)}</td>
+              <td style="text-align: center; font-weight: 600;">${item.stockLevel}</td>
+              <td style="text-align: center; color: #475569;">${item.allocatedCount}</td>
+              <td style="text-align: center; font-weight: 700; color: ${available > 0 ? '#166534' : '#991b1b'};">${available}</td>
+              <td style="text-align: right; font-weight: 600;">${this.formatCurrency(item.getTotalValuation())}</td>
+              <td><span class="badge ${status.cssClass}">${status.label}</span></td>
+              <td style="text-align: center; white-space: nowrap;">
+                <button class="btn btn-secondary btn-sm" onclick="ui.openQuickAllocateModal('${item.itemCode}')">Allocate</button>
+                <button class="btn btn-secondary btn-sm" onclick="ui.openAdjustStockModal('${item.itemCode}')" style="margin-left: 4px;">Adjust Stock</button>
+                <button class="btn btn-secondary btn-sm" onclick="ui.openRestockModal('${item.itemCode}')" style="margin-left: 4px;">Restock</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // updating the item dropdown inside the allocation tab
+      populateAllocationDropdown() {
+        const select = document.getElementById('allocItemSelect');
+        if (!select) return;
+
+        const currentVal = select.value;
+        const items = Array.from(this.manager.items.values());
+
+        select.innerHTML = '<option value="">Select an item to allocate...</option>' + items.map(item => {
+          const avail = item.getAvailableStock();
+          return `<option value="${item.itemCode}">[${item.itemCode}] ${item.name} (${this.formatCurrency(item.unitPrice)} | Available: ${avail})</option>`;
+        }).join('');
+
+        if (currentVal && this.manager.items.has(currentVal)) {
+          select.value = currentVal;
+        }
+      }
+
+      // rendering customer order allocations log
+      renderAllocationsTable() {
+        const tbody = document.getElementById('allocationsTableBody');
+        if (!tbody) return;
+
+        const allocs = this.manager.allocations;
+        if (allocs.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8">
+                <div class="empty-state">
+                  <div class="empty-title">No Order Allocations Logged</div>
+                  <div class="empty-desc">Allocate stock using the form above to reserve items for customer orders.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = allocs.map(alloc => {
+          const item = this.manager.items.get(alloc.itemCode);
+          const itemName = item ? item.name : 'Unknown Item';
+          const allocDate = new Date(alloc.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+
+          let statusBadge = '';
+          let actionButtons = '';
+
+          if (alloc.status === 'ACTIVE') {
+            statusBadge = '<span class="badge badge-allocated">Active Reservation</span>';
+            actionButtons = `
+              <button class="btn btn-secondary btn-sm" onclick="ui.dispatchAllocation('${alloc.id}')">Dispatch</button>
+              <button class="btn btn-danger btn-sm" onclick="ui.cancelAllocation('${alloc.id}')" style="margin-left: 4px;">Cancel</button>
+            `;
+          } else if (alloc.status === 'DISPATCHED') {
+            statusBadge = '<span class="badge badge-in-stock">Dispatched</span>';
+            actionButtons = '<span style="font-size: 12px; color: #64748b;">Completed</span>';
+          } else {
+            statusBadge = '<span class="badge badge-out-of-stock">Cancelled</span>';
+            actionButtons = '<span style="font-size: 12px; color: #64748b;">Returned to Stock</span>';
+          }
+
+          return `
+            <tr>
+              <td><span class="sku-code">${alloc.id}</span></td>
+              <td style="font-weight: 600;">${alloc.orderNumber}</td>
+              <td>${alloc.customerRef}</td>
+              <td>
+                <div style="font-weight: 600;">${itemName}</div>
+                <div class="sku-code" style="display: inline-block; font-size: 11px;">${alloc.itemCode}</div>
+              </td>
+              <td style="text-align: center; font-weight: 700;">${alloc.quantity}</td>
+              <td style="color: #64748b;">${allocDate}</td>
+              <td>${statusBadge}</td>
+              <td style="text-align: center; white-space: nowrap;">${actionButtons}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // dispatch order action
+      dispatchAllocation(allocId) {
+        const res = this.manager.dispatchAllocation(allocId);
+        if (res.success) {
+          this.showToast('success', 'Order Dispatched', res.message);
+          this.renderAll();
+        } else {
+          this.showToast('error', 'Action Failed', res.message);
+        }
+      }
+
+      // cancel allocation action
+      cancelAllocation(allocId) {
+        const res = this.manager.cancelAllocation(allocId);
+        if (res.success) {
+          this.showToast('info', 'Allocation Cancelled', res.message);
+          this.renderAll();
+        } else {
+          this.showToast('error', 'Action Failed', res.message);
+        }
+      }
+
+      // rendering the detailed audit report with AED figures
+      renderReportView() {
+        const report = this.manager.generateStockReport();
+
+        // specifically setting the current generated timestamp on the report as requested
+        const timestampEl = document.getElementById('reportGeneratedTimestamp');
+        if (timestampEl) {
+          timestampEl.textContent = report.generatedDate;
+        }
+
+        document.getElementById('rptTotalSkus').textContent = report.totalSkus;
+        document.getElementById('rptTotalOnHand').textContent = report.totalUnitsOnHand;
+        document.getElementById('rptTotalAllocated').textContent = report.totalAllocatedUnits;
+        document.getElementById('rptTotalAvailable').textContent = report.totalAvailableUnits;
+        document.getElementById('rptTotalValuation').textContent = this.formatCurrency(report.totalValuation);
+
+        const catTbody = document.getElementById('reportCategoryTableBody');
+        if (catTbody) {
+          catTbody.innerHTML = report.categoryBreakdown.map(cat => `
+            <tr>
+              <td style="font-weight: 600;">${cat.category}</td>
+              <td style="text-align: center;">${cat.skuCount}</td>
+              <td style="text-align: center;">${cat.onHand}</td>
+              <td style="text-align: center; color: #475569;">${cat.allocated}</td>
+              <td style="text-align: center; font-weight: 700; color: #166534;">${cat.available}</td>
+              <td style="text-align: right; font-weight: 600;">${this.formatCurrency(cat.valuation)}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      // master re-render helper
+      renderAll() {
+        this.populateCategoryDropdowns();
+        this.renderMetricsBar();
+        this.renderInventoryTable();
+        this.populateAllocationDropdown();
+        this.renderAllocationsTable();
+        this.renderCategoriesTable();
+        if (this.currentTab === 'tab-report') {
+          this.renderReportView();
+        }
+      }
+    }
+
+    // initializing the application when DOM is ready
+    let inventoryManager;
+    let ui;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // kicking off the stock manager
+      inventoryManager = new InventoryManager();
+      ui = new UIManager(inventoryManager);
+    });
+  </script>
+</body>
+</html>

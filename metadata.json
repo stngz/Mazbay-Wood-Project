@@ -1,0 +1,6 @@
+{
+  "name": "Mazbay Wood - Retail Stock Management System",
+  "description": "Retail stock management and inventory tracking system for Mazbay Wood home furniture store.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
