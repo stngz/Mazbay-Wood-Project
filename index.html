@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mazbay Wood - Retail Stock Management System</title>
+  <meta name="description" content="Retail stock management and inventory tracking system for Mazbay Wood home furniture store." />
+  <meta property="og:title" content="Mazbay Wood - Retail Stock Management System" />
+  <meta property="og:description" content="Retail stock management and inventory tracking system for Mazbay Wood home furniture store." />
+
+  <!-- Mazbay Wood artisanal carved crescent logo as favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M51 10 C31 10 14 27 14 49 C14 71 30 87 50 87 C65 87 76 77 81 57 C66 69 47 70 36 58 C27 46 29 26 51 10 Z' fill='%2373421d' stroke='%23d8ab7f' stroke-width='2'/%3E%3Ctext x='44' y='66' font-size='15' font-family='Arial, sans-serif' font-weight='bold' fill='%23351a06' text-anchor='middle'%3EMB%3C/text%3E%3C/svg%3E" />
+
+  <!-- Icons: Material Symbols Outlined -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+
+  <!-- Brand Header -->
+  <header class="app-header">
+    <div class="brand-block">
+      <div class="brand-icon-box" title="Mazbay Wood Artisanal Moon Emblem">
+        <svg viewBox="0 0 100 100" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="walnutWood" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#935b30" />
+              <stop offset="35%" stop-color="#73421d" />
+              <stop offset="70%" stop-color="#8b5327" />
+              <stop offset="100%" stop-color="#552c0f" />
+            </linearGradient>
+            <linearGradient id="bevelLight" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d8ab7f" stop-opacity="0.8" />
+              <stop offset="100%" stop-color="#3d1f08" stop-opacity="0.9" />
+            </linearGradient>
+            <filter id="carved" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0.4" dy="0.6" stdDeviation="0.4" flood-color="#2a1405" flood-opacity="0.9" />
+            </filter>
+          </defs>
+          <path d="M 51 10 C 31 10, 14 27, 14 49 C 14 71, 30 87, 50 87 C 65 87, 76 77, 81 57 C 66 69, 47 70, 36 58 C 27 46, 29 26, 51 10 Z"
+                fill="url(#walnutWood)" stroke="url(#bevelLight)" stroke-width="1.2" />
+          <g filter="url(#carved)" fill="#351a06" font-family="Arial, Helvetica, sans-serif" font-weight="bold">
+            <text x="44" y="66" font-size="13" text-anchor="middle" letter-spacing="-0.5">MB</text>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Mazbay Wood</div>
+        <div class="brand-subtitle">Retail Stock Management System</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="currency-badge">
+        <span>AED (Dirhams)</span>
+      </div>
+      <div class="clock-badge">
+        <span id="liveClockText">Loading time...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-container">
+    <button class="nav-tab active" data-tab="tab-inventory">Stock Master</button>
+    <button class="nav-tab" data-tab="tab-add-item">Add New Stock</button>
+    <button class="nav-tab" data-tab="tab-allocation">Order Allocation</button>
+    <button class="nav-tab" data-tab="tab-report">Valuation &amp; Stock Report</button>
+    <button class="nav-tab" data-tab="tab-categories">Category Manager &amp; Settings</button>
+  </nav>
+
+  <!-- Main Workspace -->
+  <main class="app-main">
+
+    <!-- Metrics Summary Bar -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Total Inventory Value</span>
+        <span class="metric-value" id="kpiTotalValuation">AED 0.00</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Active SKUs</span>
+        <span class="metric-value" id="kpiTotalSkus">0</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Units on Hand</span>
+        <span class="metric-value" id="kpiTotalOnHand">0</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Allocated to Orders</span>
+        <span class="metric-value" id="kpiTotalAllocated">0</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-label">Available for Sale</span>
+        <span class="metric-value" id="kpiTotalAvailable">0</span>
+      </div>
+    </section>
+
+    <!-- TAB 1: Stock Master / Inventory Table -->
+    <section id="tab-inventory" class="tab-panel active">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Current Furniture Inventory</div>
+          <div class="toolbar-row">
+            <div class="search-input-wrap">
+              <span class="material-symbols-outlined">search</span>
+              <input type="text" id="inventorySearchInput" placeholder="Search by item name or SKU code..." />
+            </div>
+            <select id="categoryFilterSelect" class="filter-select">
+              <option value="ALL">All Categories</option>
+            </select>
+            <select id="stockStatusFilterSelect" class="filter-select">
+              <option value="ALL">All Stock Statuses</option>
+              <option value="IN_STOCK">In Stock</option>
+              <option value="LOW_STOCK">Low Stock (≤ 3)</option>
+              <option value="OUT_OF_STOCK">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>SKU Code</th>
+                <th>Item Name</th>
+                <th>Category</th>
+                <th style="text-align: right;">Unit Price (AED)</th>
+                <th style="text-align: center;">On Hand</th>
+                <th style="text-align: center;">Allocated</th>
+                <th style="text-align: center;">Available</th>
+                <th style="text-align: right;">Valuation (AED)</th>
+                <th>Status</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Add New Stock Form -->
+    <section id="tab-add-item" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Register New Stock Item</div>
+        </div>
+        <div class="panel-body">
+          <form id="addStockForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="newItemName">Furniture Item Name *</label>
+                <input type="text" id="newItemName" class="form-control" placeholder="e.g. Dining Table, Coffee Table, Bookshelf" required />
+                <span class="form-hint">Descriptive retail title for showroom and catalog.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemCategory">Furniture Category *</label>
+                <select id="newItemCategory" class="form-control" required>
+                  <option value="">Select Category...</option>
+                </select>
+                <span class="form-hint">Manage or add new categories in the Category Manager tab.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemQuantity">Initial Quantity (Units) *</label>
+                <input type="number" id="newItemQuantity" class="form-control" min="1" step="1" value="10" required />
+                <span class="form-hint">Physical units received into warehouse stock.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemPrice">Unit Price (AED) *</label>
+                <input type="number" id="newItemPrice" class="form-control" min="0.01" step="0.01" value="1250.00" required />
+                <span class="form-hint">Standard retail selling/valuation price in United Arab Emirates Dirham (AED).</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="newItemCustomSku">Custom SKU (Optional)</label>
+                <input type="text" id="newItemCustomSku" class="form-control" placeholder="Leave empty for auto-generation (e.g. MW-LIV-007)" />
+                <span class="form-hint">Auto-generated with store prefix if left blank.</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="btn btn-secondary">Reset Form</button>
+              <button type="submit" class="btn btn-primary">Add Item to Inventory</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Stock Allocation Management -->
+    <section id="tab-allocation" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Allocate Stock to Customer Order</div>
+        </div>
+        <div class="panel-body">
+          <form id="allocateStockForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="allocItemSelect">Select Furniture Item *</label>
+                <select id="allocItemSelect" class="form-control" required>
+                  <option value="">Select an item to allocate...</option>
+                </select>
+                <span class="form-hint" id="allocItemAvailableHint">Select an item to see current available stock balance.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="allocQuantity">Quantity to Allocate *</label>
+                <input type="number" id="allocQuantity" class="form-control" min="1" step="1" value="1" required />
+                <span class="form-hint">Cannot exceed available balance (Overselling strictly prevented).</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="allocCustomerRef">Customer Name / Reference *</label>
+                <input type="text" id="allocCustomerRef" class="form-control" placeholder="e.g. Tariq Al-Mansoor (Dubai Marina)" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="allocOrderNumber">Sales Order # *</label>
+                <input type="text" id="allocOrderNumber" class="form-control" placeholder="e.g. SO-8492" required />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Confirm Order Allocation</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Active Allocation Records Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Order Allocation Log</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Allocation ID</th>
+                <th>Order #</th>
+                <th>Customer Reference</th>
+                <th>Item &amp; SKU</th>
+                <th style="text-align: center;">Allocated Qty</th>
+                <th>Allocation Date</th>
+                <th>Status</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allocationsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Stock Valuation & Summary Report -->
+    <section id="tab-report" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Official Inventory &amp; Financial Valuation Report (AED)</div>
+          <div class="no-print" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="refreshReportBtn">Regenerate</button>
+            <button class="btn btn-primary" id="downloadPdfReportBtn">Download PDF Report</button>
+            <button class="btn btn-secondary" id="printReportBtn">Print View</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="report-meta-box">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="brand-icon-box" style="width: 38px; height: 38px;">
+                <svg viewBox="0 0 100 100" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 51 10 C 31 10, 14 27, 14 49 C 14 71, 30 87, 50 87 C 65 87, 76 77, 81 57 C 66 69, 47 70, 36 58 C 27 46, 29 26, 51 10 Z"
+                        fill="#73421d" stroke="#d8ab7f" stroke-width="1.5" />
+                  <text x="44" y="66" font-size="14" font-family="Arial, sans-serif" font-weight="bold" fill="#351a06" text-anchor="middle">MB</text>
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 15px; color: #0f172a;">MAZBAY WOOD - RETAIL AUDIT REPORT</div>
+                <div style="font-size: 12px; color: #64748b;">Comprehensive stock ledger and valuation summary in UAE Dirham (AED)</div>
+              </div>
+            </div>
+            <div class="report-date-tag">
+              Report Generated Date &amp; Time: <span class="report-date-value" id="reportGeneratedTimestamp">--</span>
+            </div>
+          </div>
+
+          <!-- Summary Metrics Table for Report -->
+          <div class="table-responsive" style="margin-bottom: 24px;">
+            <table class="data-table" style="border: 1px solid #e2e8f0;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th>Total Active SKUs</th>
+                  <th style="text-align: center;">Total Units On Hand</th>
+                  <th style="text-align: center;">Total Allocated Units</th>
+                  <th style="text-align: center;">Total Available Units</th>
+                  <th style="text-align: right;">Total Financial Valuation (AED)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight: 700; font-size: 15px;" id="rptTotalSkus">0</td>
+                  <td style="text-align: center; font-weight: 700; font-size: 15px;" id="rptTotalOnHand">0</td>
+                  <td style="text-align: center; font-weight: 700; font-size: 15px; color: #475569;" id="rptTotalAllocated">0</td>
+                  <td style="text-align: center; font-weight: 700; font-size: 15px; color: #166534;" id="rptTotalAvailable">0</td>
+                  <td style="text-align: right; font-weight: 700; font-size: 16px; color: #0f172a;" id="rptTotalValuation">AED 0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Detailed Valuation per Category Breakdown -->
+          <div style="margin-top: 24px;">
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #334155;">
+              Category Valuation &amp; Unit Breakdown (AED)
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th style="text-align: center;">SKU Count</th>
+                    <th style="text-align: center;">On Hand Units</th>
+                    <th style="text-align: center;">Allocated Units</th>
+                    <th style="text-align: center;">Available Units</th>
+                    <th style="text-align: right;">Category Valuation (AED)</th>
+                  </tr>
+                </thead>
+                <tbody id="reportCategoryTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Category Manager & Administrative Settings -->
+    <section id="tab-categories" class="tab-panel" style="display: none;">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Add New Furniture Category</div>
+        </div>
+        <div class="panel-body">
+          <form id="addCategoryForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="newCategoryName">Category Name *</label>
+                <input type="text" id="newCategoryName" class="form-control" placeholder="e.g. Outdoor & Patio, Lighting, Kitchen & Bar" required />
+                <span class="form-hint">Category will immediately appear across all filters, product forms, and reports.</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="newCategorySkuPrefix">SKU Prefix (Optional)</label>
+                <input type="text" id="newCategorySkuPrefix" class="form-control" placeholder="e.g. MW-OUT, MW-LGT (3 to 6 uppercase letters)" />
+                <span class="form-hint">Used for automatic SKU generation. Defaults to MW-CAT if omitted.</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Create Category</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Current Categories Administrative List -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Active Inventory Categories</div>
+          <div style="font-size: 12px; color: #64748b;">
+            Categories dynamically populate all selection menus.
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Category Name</th>
+                <th>SKU Prefix</th>
+                <th style="text-align: center;">Associated SKUs</th>
+                <th style="text-align: center;">Total Units On Hand</th>
+                <th style="text-align: right;">Category Value (AED)</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Quick Restock Modal -->
+  <div class="modal-overlay" id="restockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Restock Inventory</div>
+        <button class="modal-close-btn" data-close-modal="restockModal" aria-label="Close modal">
+          <span style="font-size: 20px; line-height: 1;">&times;</span>
+        </button>
+      </div>
+      <form id="restockModalForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalRestockItemCode" />
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b;">Furniture Item</div>
+            <div id="modalRestockItemName" style="font-size: 15px; font-weight: 700; color: #0f172a;"></div>
+            <div id="modalRestockItemSku" class="sku-code" style="display: inline-block; margin-top: 4px;"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modalRestockQty">Units Received to Add *</label>
+            <input type="number" id="modalRestockQty" class="form-control" min="1" step="1" value="5" required />
+            <span class="form-hint">Physical quantity arriving from workshop into warehouse.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="restockModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Restock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Adjust / Edit Stock Modal -->
+  <div class="modal-overlay" id="adjustStockModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Adjust Stock Levels</div>
+        <button class="modal-close-btn" data-close-modal="adjustStockModal" aria-label="Close modal">
+          <span style="font-size: 20px; line-height: 1;">&times;</span>
+        </button>
+      </div>
+      <form id="adjustStockModalForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalAdjustItemCode" />
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b;">Furniture Item</div>
+            <div id="modalAdjustItemName" style="font-size: 15px; font-weight: 700; color: #0f172a;"></div>
+            <div id="modalAdjustItemSku" class="sku-code" style="display: inline-block; margin-top: 4px;"></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+            <div>
+              <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Current On Hand</div>
+              <div id="modalAdjustCurrentOnHand" style="font-size: 16px; font-weight: 700; color: #0f172a;">0</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Allocated to Orders</div>
+              <div id="modalAdjustCurrentAllocated" style="font-size: 16px; font-weight: 700; color: #475569;">0</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="modalAdjustNewTotal">Set New Total Physical Stock (On Hand) *</label>
+            <input type="number" id="modalAdjustNewTotal" class="form-control" min="0" step="1" required />
+            <span class="form-hint" id="modalAdjustMinWarning">Minimum allowed is currently allocated units to prevent overselling.</span>
+          </div>
+
+          <div style="margin-top: 14px; font-size: 13px; color: #334155; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 4px;">
+            Resulting Available to Sell: <strong id="modalAdjustProjectedAvailable" style="color: #166534;">0</strong> unit(s)
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="adjustStockModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Stock Balance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quick Allocate Modal -->
+  <div class="modal-overlay" id="quickAllocateModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Allocate Stock Item</div>
+        <button class="modal-close-btn" data-close-modal="quickAllocateModal" aria-label="Close modal">
+          <span style="font-size: 20px; line-height: 1;">&times;</span>
+        </button>
+      </div>
+      <form id="quickAllocateModalForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalAllocItemCode" />
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #64748b;">Allocating Furniture</div>
+            <div id="modalAllocItemName" style="font-size: 15px; font-weight: 700; color: #0f172a;"></div>
+            <div style="font-size: 13px; color: #475569; margin-top: 4px;">
+              Available Balance: <strong id="modalAllocAvailableCount" style="color: #166534;">0</strong> units
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalAllocQty">Quantity to Reserve *</label>
+            <input type="number" id="modalAllocQty" class="form-control" min="1" step="1" value="1" required />
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalAllocCustomer">Customer Name *</label>
+            <input type="text" id="modalAllocCustomer" class="form-control" placeholder="e.g. Fatima Al-Zahra" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modalAllocOrder">Order Number *</label>
+            <input type="text" id="modalAllocOrder" class="form-control" placeholder="e.g. SO-9102" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="quickAllocateModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Allocation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Entry Point -->
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

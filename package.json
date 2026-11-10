@@ -1,0 +1,17 @@
+{
+  "name": "mazbay-wood-inventory",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Retail stock management and inventory tracking system for Mazbay Wood furniture store.",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
