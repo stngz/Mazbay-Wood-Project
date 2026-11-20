@@ -1,12 +1,38 @@
 import { InventoryManager } from '../services/InventoryManager';
-import { ToastType } from '../types/inventory';
+import { FurnitureType, ToastType } from '../types/inventory';
 
 /**
- * UIManager orchestrates DOM rendering, event listeners, modal dialogues, and user notifications.
+ * Converts text typed by a user into safe HTML by replacing the characters
+ * that HTML treats as code. Without this, a name such as "<b>Sofa</b>" was
+ * drawn in bold, and a name containing a script could run code (test T04).
+ */
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Shortcut: finds an element by id and treats it as the given element type. */
+function el<T extends HTMLElement = HTMLElement>(id: string): T | null {
+  return document.getElementById(id) as T | null;
+}
+
+/** Shortcut: reads the current value of an input or select box. */
+function valueOf(id: string): string {
+  return (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value ?? '';
+}
+
+/**
+ * UIManager connects the web page to InventoryManager.
+ * It reads what the user types, asks InventoryManager to act, then redraws
+ * the tables and shows a message. It contains no stock rules of its own.
  */
 export class UIManager {
-  manager: InventoryManager;
-  currentTab: string;
+  private readonly manager: InventoryManager;   // the business logic object
+  private currentTab: string;                   // id of the tab on screen
 
   constructor(inventoryManager: InventoryManager) {
     this.manager = inventoryManager;
@@ -14,59 +40,56 @@ export class UIManager {
     this.init();
   }
 
-  init(): void {
+  /** Connects every button, form and filter, then draws the first screen. */
+  private init(): void {
     this.setupNavigation();
     this.setupForms();
     this.setupModals();
     this.setupFilters();
+    this.setupTableActions();
     this.startClock();
     this.renderAll();
   }
 
-  /**
-   * Updates live clock in header every second.
-   */
-  startClock(): void {
+  // ===================================================================
+  // Setup: event listeners
+  // ===================================================================
+
+  /** Updates the clock in the header once a second. */
+  private startClock(): void {
     const update = () => {
       const now = new Date();
-      const el = document.getElementById('liveClockText');
-      if (el) {
-        el.textContent =
-          now.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          }) +
+      const clock = el('liveClockText');
+      if (clock) {
+        clock.textContent =
+          now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
           ' - ' +
-          now.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          });
+          now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       }
     };
     update();
-    setInterval(update, 1000);
+    setInterval(update, 1000); // repeat every 1000 milliseconds
   }
 
-  /**
-   * Set up tab switching navigation.
-   */
-  setupNavigation(): void {
-    const tabs = document.querySelectorAll('.nav-tab');
+  /** Makes the tabs switch panels, and refreshes a panel's data when it opens. */
+  private setupNavigation(): void {
+    const tabs = document.querySelectorAll<HTMLButtonElement>('.nav-tab');
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        const targetId = tab.getAttribute('data-tab');
+        const targetId = tab.dataset.tab;
         if (!targetId) return;
 
+        // Highlight the clicked tab only.
         tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
 
+        // Show the matching panel and hide the rest.
         document.querySelectorAll<HTMLElement>('.tab-panel').forEach(panel => {
           panel.style.display = panel.id === targetId ? 'block' : 'none';
         });
         this.currentTab = targetId;
 
+        // Some panels need fresh numbers each time they are opened.
         if (targetId === 'tab-report') {
           this.renderReportView();
         } else if (targetId === 'tab-allocation') {
@@ -79,468 +102,420 @@ export class UIManager {
     });
   }
 
-  /**
-   * Set up submit handlers for primary input forms.
-   */
-  setupForms(): void {
-    // Add New Stock Form
-    const addForm = document.getElementById('addStockForm') as HTMLFormElement | null;
-    if (addForm) {
-      addForm.addEventListener('submit', (e: Event) => {
-        e.preventDefault();
-        const name = (document.getElementById('newItemName') as HTMLInputElement).value;
-        const category = (document.getElementById('newItemCategory') as HTMLSelectElement).value;
-        const qty = (document.getElementById('newItemQuantity') as HTMLInputElement).value;
-        const price = (document.getElementById('newItemPrice') as HTMLInputElement).value;
-        const customSku = (document.getElementById('newItemCustomSku') as HTMLInputElement).value;
-
-        try {
-          const newItem = this.manager.addStock(name, category, qty, price, customSku);
-          this.showToast(
-            'success',
-            'Stock Added',
-            `Registered "${newItem.name}" under SKU [${newItem.itemCode}] at ${this.formatCurrency(newItem.unitPrice)}.`
-          );
-          addForm.reset();
-          this.renderAll();
-
-          const invTabBtn = document.querySelector<HTMLButtonElement>('[data-tab="tab-inventory"]');
-          if (invTabBtn) invTabBtn.click();
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Registration error';
-          this.showToast('error', 'Registration Error', msg);
-        }
-      });
-    }
-
-    // Add New Category Form
-    const addCatForm = document.getElementById('addCategoryForm') as HTMLFormElement | null;
-    if (addCatForm) {
-      addCatForm.addEventListener('submit', (e: Event) => {
-        e.preventDefault();
-        const name = (document.getElementById('newCategoryName') as HTMLInputElement).value;
-        const prefix = (document.getElementById('newCategorySkuPrefix') as HTMLInputElement).value;
-
-        try {
-          const newCat = this.manager.addCategory(name, prefix);
-          this.showToast(
-            'success',
-            'Category Created',
-            `Added category "${newCat.name}" with prefix [${newCat.prefix}]. Selection dropdowns have been updated.`
-          );
-          addCatForm.reset();
-          this.renderAll();
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Category error';
-          this.showToast('error', 'Category Error', msg);
-        }
-      });
-    }
-
-    // Allocate Stock Form
-    const allocForm = document.getElementById('allocateStockForm') as HTMLFormElement | null;
-    if (allocForm) {
-      allocForm.addEventListener('submit', (e: Event) => {
-        e.preventDefault();
-        const itemCode = (document.getElementById('allocItemSelect') as HTMLSelectElement).value;
-        const qty = (document.getElementById('allocQuantity') as HTMLInputElement).value;
-        const customerRef = (document.getElementById('allocCustomerRef') as HTMLInputElement).value;
-        const orderNum = (document.getElementById('allocOrderNumber') as HTMLInputElement).value;
-
-        if (!itemCode) {
-          this.showToast('warning', 'Selection Required', 'Please select an item to allocate.');
-          return;
-        }
-
-        const result = this.manager.allocateStock(itemCode, qty, orderNum, customerRef);
-        if (result.success) {
-          this.showToast('success', 'Stock Allocated', result.message);
-          allocForm.reset();
-          this.updateAllocItemHint();
-          this.renderAll();
-        } else {
-          this.showToast('error', 'Allocation Rejected', result.message);
-        }
-      });
-
-      const itemSelect = document.getElementById('allocItemSelect');
-      if (itemSelect) {
-        itemSelect.addEventListener('change', () => this.updateAllocItemHint());
+  /** Handles the submit button of each main form. */
+  private setupForms(): void {
+    // ---- Add New Stock form ----
+    const addForm = el<HTMLFormElement>('addStockForm');
+    addForm?.addEventListener('submit', (e: Event) => {
+      e.preventDefault(); // stop the browser reloading the page
+      try {
+        const newItem = this.manager.addStock(
+          valueOf('newItemName'),
+          valueOf('newItemCategory'),
+          valueOf('newItemQuantity'),
+          valueOf('newItemPrice'),
+          valueOf('newItemCustomSku'),
+          (valueOf('newItemType') || 'STANDARD') as FurnitureType
+        );
+        this.showToast(
+          'success',
+          'Stock Added',
+          `Registered "${newItem.name}" (${newItem.getTypeLabel()}) under SKU [${newItem.itemCode}] at ${this.formatCurrency(newItem.unitPrice)}.`
+        );
+        addForm.reset();
+        this.renderAll();
+        // Jump back to the stock list so the user sees the new row.
+        document.querySelector<HTMLButtonElement>('[data-tab="tab-inventory"]')?.click();
+      } catch (err: unknown) {
+        // addStock() throws an Error with a readable message when input is invalid.
+        this.showToast('error', 'Registration Error', err instanceof Error ? err.message : 'Registration error');
       }
-    }
+    });
 
-    // Download PDF Report Action
-    const downloadPdfBtn = document.getElementById('downloadPdfReportBtn');
-    if (downloadPdfBtn) {
-      downloadPdfBtn.addEventListener('click', () => {
-        window.print();
-      });
-    }
+    // ---- Add Category form ----
+    const addCatForm = el<HTMLFormElement>('addCategoryForm');
+    addCatForm?.addEventListener('submit', (e: Event) => {
+      e.preventDefault();
+      try {
+        const newCat = this.manager.addCategory(valueOf('newCategoryName'), valueOf('newCategorySkuPrefix'));
+        this.showToast('success', 'Category Created', `Added category "${newCat.name}" with prefix [${newCat.prefix}]. Selection dropdowns have been updated.`);
+        addCatForm.reset();
+        this.renderAll();
+      } catch (err: unknown) {
+        this.showToast('error', 'Category Error', err instanceof Error ? err.message : 'Category error');
+      }
+    });
 
-    // Print View Action
-    const printBtn = document.getElementById('printReportBtn');
-    if (printBtn) {
-      printBtn.addEventListener('click', () => {
-        window.print();
-      });
-    }
+    // ---- Order Allocation form ----
+    const allocForm = el<HTMLFormElement>('allocateStockForm');
+    allocForm?.addEventListener('submit', (e: Event) => {
+      e.preventDefault();
+      const itemCode = valueOf('allocItemSelect');
+      if (!itemCode) {
+        this.showToast('warning', 'Selection Required', 'Please select an item to allocate.');
+        return;
+      }
+      const result = this.manager.allocateStock(
+        itemCode,
+        valueOf('allocQuantity'),
+        valueOf('allocOrderNumber'),
+        valueOf('allocCustomerRef')
+      );
+      if (result.success) {
+        this.showToast('success', 'Stock Allocated', result.message);
+        allocForm.reset();
+        this.updateAllocItemHint();
+        this.renderAll();
+      } else {
+        this.showToast('error', 'Allocation Rejected', result.message);
+      }
+    });
+    el('allocItemSelect')?.addEventListener('change', () => this.updateAllocItemHint());
 
-    // Refresh Report Action
-    const refreshReportBtn = document.getElementById('refreshReportBtn');
-    if (refreshReportBtn) {
-      refreshReportBtn.addEventListener('click', () => {
-        this.renderReportView();
-        this.showToast('info', 'Report Updated', 'Calculated latest inventory valuation in AED.');
-      });
-    }
+    // ---- Report buttons ----
+    // "Download PDF" opens the print dialog, where the user can choose "Save as PDF".
+    el('downloadPdfReportBtn')?.addEventListener('click', () => window.print());
+    el('printReportBtn')?.addEventListener('click', () => window.print());
+    el('refreshReportBtn')?.addEventListener('click', () => {
+      this.renderReportView();
+      this.showToast('info', 'Report Updated', 'Calculated latest inventory valuation in AED.');
+    });
   }
 
   /**
-   * Updates balance guidance text based on currently selected item.
+   * One click listener per table (event delegation) instead of an onclick
+   * written into every button. Each button carries data-action and the code
+   * it acts on, read safely from the dataset. The old inline onclick broke
+   * when a category name contained an apostrophe (test T14).
    */
-  updateAllocItemHint(): void {
-    const itemCode = (document.getElementById('allocItemSelect') as HTMLSelectElement)?.value;
-    const hintEl = document.getElementById('allocItemAvailableHint');
-    if (!hintEl) return;
+  private setupTableActions(): void {
+    // Stock Master buttons: Allocate / Adjust Stock / Restock
+    el('inventoryTableBody')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
+      const code = btn?.dataset.code;
+      if (!btn || !code) return;
+      if (btn.dataset.action === 'allocate') this.openQuickAllocateModal(code);
+      if (btn.dataset.action === 'adjust') this.openAdjustStockModal(code);
+      if (btn.dataset.action === 'restock') this.openRestockModal(code);
+    });
 
-    if (!itemCode) {
-      hintEl.textContent = 'Select an item to see current available stock balance.';
+    // Order log buttons: Dispatch / Cancel
+    el('allocationsTableBody')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
+      const id = btn?.dataset.id;
+      if (!btn || !id) return;
+      if (btn.dataset.action === 'dispatch') this.dispatchAllocation(id);
+      if (btn.dataset.action === 'cancel') this.cancelAllocation(id);
+    });
+
+    // Category table: Delete
+    el('categoriesTableBody')?.addEventListener('click', e => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action="delete-category"]');
+      const name = btn?.dataset.category;
+      if (name) this.handleDeleteCategory(name);
+    });
+  }
+
+  /** Shows how many units of the chosen item are free, under the item box. */
+  private updateAllocItemHint(): void {
+    const hint = el('allocItemAvailableHint');
+    if (!hint) return;
+    const item = this.manager.getItem(valueOf('allocItemSelect'));
+    if (!item) {
+      hint.textContent = 'Select an item to see current available stock balance.';
       return;
     }
-    const item = this.manager.items.get(itemCode);
-    if (item) {
-      const avail = item.getAvailableStock();
-      hintEl.innerHTML = `Available stock for this item: <strong>${avail}</strong> unit(s) (Total On Hand: ${item.stockLevel}, Allocated: ${item.allocatedCount}, Unit Price: ${this.formatCurrency(item.unitPrice)}).`;
-    }
+    hint.innerHTML = `Available stock for this item: <strong>${item.getAvailableStock()}</strong> unit(s) (Total On Hand: ${item.stockLevel}, Allocated: ${item.allocatedCount}, Unit Price: ${escapeHtml(this.formatCurrency(item.unitPrice))}).`;
   }
 
-  /**
-   * Set up search query and category/status filter inputs.
-   */
-  setupFilters(): void {
-    const searchInput = document.getElementById('inventorySearchInput');
-    const catSelect = document.getElementById('categoryFilterSelect');
-    const statusSelect = document.getElementById('stockStatusFilterSelect');
-
-    const triggerFilter = () => {
-      this.renderInventoryTable();
-    };
-
-    if (searchInput) searchInput.addEventListener('input', triggerFilter);
-    if (catSelect) catSelect.addEventListener('change', triggerFilter);
-    if (statusSelect) statusSelect.addEventListener('change', triggerFilter);
+  /** Redraws the stock table whenever the search box or a filter changes. */
+  private setupFilters(): void {
+    const redraw = () => this.renderInventoryTable();
+    el('inventorySearchInput')?.addEventListener('input', redraw);
+    el('categoryFilterSelect')?.addEventListener('change', redraw);
+    el('stockStatusFilterSelect')?.addEventListener('change', redraw);
   }
 
-  /**
-   * Set up modal dialogues and form handlers.
-   */
-  setupModals(): void {
-    document.querySelectorAll('[data-close-modal]').forEach(btn => {
+  /** Handles the three pop-up forms (restock, adjust stock, quick allocate). */
+  private setupModals(): void {
+    // Any button with data-close-modal closes the pop-up it names.
+    document.querySelectorAll<HTMLElement>('[data-close-modal]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const modalId = btn.getAttribute('data-close-modal');
+        const modalId = btn.dataset.closeModal;
         if (modalId) this.closeModal(modalId);
       });
     });
 
-    // Quick Restock Submission
-    const restockForm = document.getElementById('restockModalForm') as HTMLFormElement | null;
-    if (restockForm) {
-      restockForm.addEventListener('submit', (e: Event) => {
-        e.preventDefault();
-        const code = (document.getElementById('modalRestockItemCode') as HTMLInputElement).value;
-        const qty = (document.getElementById('modalRestockQty') as HTMLInputElement).value;
-        const res = this.manager.restockItem(code, qty);
-        if (res.success) {
-          this.showToast('success', 'Inventory Restocked', res.message);
-          this.closeModal('restockModal');
-          this.renderAll();
-        } else {
-          this.showToast('error', 'Restock Failed', res.message);
-        }
-      });
-    }
-
-    // Adjust Stock Level Submission
-    const adjustForm = document.getElementById('adjustStockModalForm') as HTMLFormElement | null;
-    if (adjustForm) {
-      adjustForm.addEventListener('submit', (e: Event) => {
-        e.preventDefault();
-        const code = (document.getElementById('modalAdjustItemCode') as HTMLInputElement).value;
-        const newTotal = (document.getElementById('modalAdjustNewTotal') as HTMLInputElement).value;
-
-        const res = this.manager.editStock(code, newTotal);
-        if (res.success) {
-          this.showToast('success', 'Stock Balance Updated', res.message);
-          this.closeModal('adjustStockModal');
-          this.renderAll();
-        } else {
-          this.showToast('error', 'Stock Adjustment Rejected', res.message);
-        }
-      });
-
-      const inputNewTotal = document.getElementById('modalAdjustNewTotal') as HTMLInputElement | null;
-      if (inputNewTotal) {
-        inputNewTotal.addEventListener('input', () => {
-          const code = (document.getElementById('modalAdjustItemCode') as HTMLInputElement).value;
-          const item = this.manager.items.get(code);
-          if (!item) return;
-          const targetVal = Number(inputNewTotal.value) || 0;
-          const projected = Math.max(0, targetVal - item.allocatedCount);
-          const projectedEl = document.getElementById('modalAdjustProjectedAvailable');
-          if (projectedEl) projectedEl.textContent = String(projected);
-        });
+    // ---- Restock pop-up ----
+    el<HTMLFormElement>('restockModalForm')?.addEventListener('submit', (e: Event) => {
+      e.preventDefault();
+      const res = this.manager.restockItem(valueOf('modalRestockItemCode'), valueOf('modalRestockQty'));
+      if (res.success) {
+        this.showToast('success', 'Inventory Restocked', res.message);
+        this.closeModal('restockModal');
+        this.renderAll();
+      } else {
+        this.showToast('error', 'Restock Failed', res.message);
       }
-    }
+    });
 
-    // Quick Allocate Submission
-    const quickAllocForm = document.getElementById('quickAllocateModalForm') as HTMLFormElement | null;
-    if (quickAllocForm) {
-      quickAllocForm.addEventListener('submit', (e: Event) => {
-        e.preventDefault();
-        const code = (document.getElementById('modalAllocItemCode') as HTMLInputElement).value;
-        const qty = (document.getElementById('modalAllocQty') as HTMLInputElement).value;
-        const customer = (document.getElementById('modalAllocCustomer') as HTMLInputElement).value;
-        const order = (document.getElementById('modalAllocOrder') as HTMLInputElement).value;
+    // ---- Adjust stock pop-up ----
+    el<HTMLFormElement>('adjustStockModalForm')?.addEventListener('submit', (e: Event) => {
+      e.preventDefault();
+      const res = this.manager.editStock(valueOf('modalAdjustItemCode'), valueOf('modalAdjustNewTotal'));
+      if (res.success) {
+        this.showToast('success', 'Stock Balance Updated', res.message);
+        this.closeModal('adjustStockModal');
+        this.renderAll();
+      } else {
+        this.showToast('error', 'Stock Adjustment Rejected', res.message);
+      }
+    });
 
-        const res = this.manager.allocateStock(code, qty, order, customer);
-        if (resultIsSuccess(res)) {
-          this.showToast('success', 'Order Allocated', res.message);
-          this.closeModal('quickAllocateModal');
-          quickAllocForm.reset();
-          this.renderAll();
-        } else {
-          this.showToast('error', 'Allocation Rejected', res.message);
-        }
-      });
-    }
+    // Live preview: as the user types a new total, show what will be left to sell.
+    const inputNewTotal = el<HTMLInputElement>('modalAdjustNewTotal');
+    inputNewTotal?.addEventListener('input', () => {
+      const item = this.manager.getItem(valueOf('modalAdjustItemCode'));
+      if (!item) return;
+      const projected = Math.max(0, (Number(inputNewTotal.value) || 0) - item.allocatedCount);
+      const projectedEl = el('modalAdjustProjectedAvailable');
+      if (projectedEl) projectedEl.textContent = String(projected);
+    });
+
+    // ---- Quick allocate pop-up ----
+    const quickAllocForm = el<HTMLFormElement>('quickAllocateModalForm');
+    quickAllocForm?.addEventListener('submit', (e: Event) => {
+      e.preventDefault();
+      const res = this.manager.allocateStock(
+        valueOf('modalAllocItemCode'),
+        valueOf('modalAllocQty'),
+        valueOf('modalAllocOrder'),
+        valueOf('modalAllocCustomer')
+      );
+      if (res.success) {
+        this.showToast('success', 'Order Allocated', res.message);
+        this.closeModal('quickAllocateModal');
+        quickAllocForm.reset();
+        this.renderAll();
+      } else {
+        this.showToast('error', 'Allocation Rejected', res.message);
+      }
+    });
   }
 
-  openModal(modalId: string): void {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.add('open');
+  // ===================================================================
+  // Pop-ups and messages
+  // ===================================================================
+
+  /** Shows a pop-up by adding the "open" CSS class. */
+  private openModal(modalId: string): void {
+    el(modalId)?.classList.add('open');
   }
 
-  closeModal(modalId: string): void {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('open');
+  /** Hides a pop-up. */
+  private closeModal(modalId: string): void {
+    el(modalId)?.classList.remove('open');
   }
 
-  openRestockModal(itemCode: string): void {
-    const item = this.manager.items.get(itemCode);
+  /** Fills and opens the Restock pop-up for one item. */
+  private openRestockModal(itemCode: string): void {
+    const item = this.manager.getItem(itemCode);
     if (!item) return;
-    (document.getElementById('modalRestockItemCode') as HTMLInputElement).value = item.itemCode;
-    (document.getElementById('modalRestockItemName') as HTMLElement).textContent = item.name;
-    (document.getElementById('modalRestockItemSku') as HTMLElement).textContent = item.itemCode;
-    (document.getElementById('modalRestockQty') as HTMLInputElement).value = '5';
+    el<HTMLInputElement>('modalRestockItemCode')!.value = item.itemCode;
+    el('modalRestockItemName')!.textContent = item.name;   // textContent never runs HTML
+    el('modalRestockItemSku')!.textContent = item.itemCode;
+    el<HTMLInputElement>('modalRestockQty')!.value = '5';
     this.openModal('restockModal');
   }
 
-  openAdjustStockModal(itemCode: string): void {
-    const item = this.manager.items.get(itemCode);
+  /** Fills and opens the Adjust Stock pop-up for one item. */
+  private openAdjustStockModal(itemCode: string): void {
+    const item = this.manager.getItem(itemCode);
     if (!item) return;
-    (document.getElementById('modalAdjustItemCode') as HTMLInputElement).value = item.itemCode;
-    (document.getElementById('modalAdjustItemName') as HTMLElement).textContent = item.name;
-    (document.getElementById('modalAdjustItemSku') as HTMLElement).textContent = item.itemCode;
-    (document.getElementById('modalAdjustCurrentOnHand') as HTMLElement).textContent = String(item.stockLevel);
-    (document.getElementById('modalAdjustCurrentAllocated') as HTMLElement).textContent = String(item.allocatedCount);
+    el<HTMLInputElement>('modalAdjustItemCode')!.value = item.itemCode;
+    el('modalAdjustItemName')!.textContent = item.name;
+    el('modalAdjustItemSku')!.textContent = item.itemCode;
+    el('modalAdjustCurrentOnHand')!.textContent = String(item.stockLevel);
+    el('modalAdjustCurrentAllocated')!.textContent = String(item.allocatedCount);
 
-    const inputNewTotal = document.getElementById('modalAdjustNewTotal') as HTMLInputElement;
+    const inputNewTotal = el<HTMLInputElement>('modalAdjustNewTotal')!;
     inputNewTotal.value = String(item.stockLevel);
-    inputNewTotal.min = String(item.allocatedCount);
+    inputNewTotal.min = String(item.allocatedCount); // the browser also blocks lower values
 
-    const minWarningEl = document.getElementById('modalAdjustMinWarning');
-    if (minWarningEl) {
-      minWarningEl.textContent = `Minimum allowed is ${item.allocatedCount} unit(s) to honor active customer orders.`;
-    }
-
-    const projEl = document.getElementById('modalAdjustProjectedAvailable');
-    if (projEl) {
-      projEl.textContent = String(item.getAvailableStock());
-    }
+    const minWarning = el('modalAdjustMinWarning');
+    if (minWarning) minWarning.textContent = `Minimum allowed is ${item.allocatedCount} unit(s) to honor active customer orders.`;
+    const projected = el('modalAdjustProjectedAvailable');
+    if (projected) projected.textContent = String(item.getAvailableStock());
 
     this.openModal('adjustStockModal');
   }
 
-  openQuickAllocateModal(itemCode: string): void {
-    const item = this.manager.items.get(itemCode);
+  /** Fills and opens the Quick Allocate pop-up for one item. */
+  private openQuickAllocateModal(itemCode: string): void {
+    const item = this.manager.getItem(itemCode);
     if (!item) return;
-    (document.getElementById('modalAllocItemCode') as HTMLInputElement).value = item.itemCode;
-    (document.getElementById('modalAllocItemName') as HTMLElement).textContent = item.name;
-    (document.getElementById('modalAllocAvailableCount') as HTMLElement).textContent = String(item.getAvailableStock());
-    const qtyInput = document.getElementById('modalAllocQty') as HTMLInputElement;
+    el<HTMLInputElement>('modalAllocItemCode')!.value = item.itemCode;
+    el('modalAllocItemName')!.textContent = item.name;
+    el('modalAllocAvailableCount')!.textContent = String(item.getAvailableStock());
+    const qtyInput = el<HTMLInputElement>('modalAllocQty')!;
     qtyInput.value = '1';
     qtyInput.max = String(item.getAvailableStock());
     this.openModal('quickAllocateModal');
   }
 
   /**
-   * Display toast notification.
+   * Shows a message in the corner for 4 seconds.
+   * Built with textContent, so names inside messages are shown as plain text.
    */
-  showToast(type: ToastType, title: string, message: string): void {
-    const container = document.getElementById('toastContainer');
+  private showToast(type: ToastType, title: string, message: string): void {
+    const container = el('toastContainer');
     if (!container) return;
 
-    const iconMap: Record<ToastType, string> = {
-      success: 'check_circle',
-      error: 'error',
-      warning: 'warning',
-      info: 'info'
-    };
+    const iconMap: Record<ToastType, string> = { success: 'check_circle', error: 'error', warning: 'warning', info: 'info' };
 
     const toast = document.createElement('div');
     toast.className = `toast-item toast-${type}`;
-    toast.innerHTML = `
-      <div class="toast-icon">
-        <span class="material-symbols-outlined">${iconMap[type] || 'info'}</span>
-      </div>
-      <div class="toast-content">
-        <div class="toast-title">${title}</div>
-        <div class="toast-msg">${message}</div>
-      </div>
-    `;
 
+    const iconBox = document.createElement('div');
+    iconBox.className = 'toast-icon';
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined';
+    icon.textContent = iconMap[type];
+    iconBox.appendChild(icon);
+
+    const content = document.createElement('div');
+    content.className = 'toast-content';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'toast-title';
+    titleEl.textContent = title;
+    const msgEl = document.createElement('div');
+    msgEl.className = 'toast-msg';
+    msgEl.textContent = message;
+    content.append(titleEl, msgEl);
+
+    toast.append(iconBox, content);
     container.appendChild(toast);
 
+    // Fade out after 4 seconds, then remove from the page.
     setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(10px)';
       toast.style.transition = 'all 0.2s ease-out';
-      setTimeout(() => {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-      }, 200);
+      setTimeout(() => toast.remove(), 200);
     }, 4000);
   }
 
-  /**
-   * Format numbers in AED currency.
-   */
-  formatCurrency(val: number): string {
-    return (
-      'AED ' +
-      Number(val).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
-    );
+  /** Formats a number as money, e.g. 1250 -> "AED 1,250.00". */
+  private formatCurrency(val: number): string {
+    return 'AED ' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  /**
-   * Update category dropdowns dynamically.
-   */
-  populateCategoryDropdowns(): void {
-    const categories = this.manager.getCategories();
+  // ===================================================================
+  // Drawing tables
+  // ===================================================================
 
-    const filterSelect = document.getElementById('categoryFilterSelect') as HTMLSelectElement | null;
+  /** Refills every category drop-down, keeping the user's current choice. */
+  private populateCategoryDropdowns(): void {
+    const categories = this.manager.getCategories();
+    const options = categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+
+    const filterSelect = el<HTMLSelectElement>('categoryFilterSelect');
     if (filterSelect) {
-      const currentFilter = filterSelect.value;
-      filterSelect.innerHTML =
-        '<option value="ALL">All Categories</option>' +
-        categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-      if (currentFilter && (currentFilter === 'ALL' || categories.some(c => c.name === currentFilter))) {
-        filterSelect.value = currentFilter;
-      }
+      const current = filterSelect.value;
+      filterSelect.innerHTML = '<option value="ALL">All Categories</option>' + options;
+      if (current === 'ALL' || categories.some(c => c.name === current)) filterSelect.value = current;
     }
 
-    const itemCatSelect = document.getElementById('newItemCategory') as HTMLSelectElement | null;
+    const itemCatSelect = el<HTMLSelectElement>('newItemCategory');
     if (itemCatSelect) {
-      const currentVal = itemCatSelect.value;
-      itemCatSelect.innerHTML =
-        '<option value="">Select Category...</option>' +
-        categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-      if (currentVal && categories.some(c => c.name === currentVal)) {
-        itemCatSelect.value = currentVal;
-      }
+      const current = itemCatSelect.value;
+      itemCatSelect.innerHTML = '<option value="">Select Category...</option>' + options;
+      if (categories.some(c => c.name === current)) itemCatSelect.value = current;
     }
   }
 
-  renderCategoriesTable(): void {
-    const tbody = document.getElementById('categoriesTableBody');
+  /** Draws the category list with item counts and values. */
+  private renderCategoriesTable(): void {
+    const tbody = el('categoriesTableBody');
     if (!tbody) return;
+    const items = this.manager.getAllItems();
 
-    const categories = this.manager.getCategories();
-    const items = Array.from(this.manager.items.values());
-
-    tbody.innerHTML = categories
+    tbody.innerHTML = this.manager
+      .getCategories()
       .map(cat => {
         const catItems = items.filter(i => i.category === cat.name);
-        const totalUnits = catItems.reduce((acc, curr) => acc + curr.stockLevel, 0);
-        const totalVal = catItems.reduce((acc, curr) => acc + curr.getTotalValuation(), 0);
-
+        const totalUnits = catItems.reduce((sum, item) => sum + item.stockLevel, 0);
+        const totalVal = catItems.reduce((sum, item) => sum + item.getTotalValuation(), 0);
         return `
           <tr>
-            <td style="font-weight: 700; color: #0f172a;">${cat.name}</td>
-            <td><span class="sku-code">${cat.prefix}</span></td>
+            <td style="font-weight: 700; color: #0f172a;">${escapeHtml(cat.name)}</td>
+            <td><span class="sku-code">${escapeHtml(cat.prefix)}</span></td>
             <td style="text-align: center; font-weight: 600;">${catItems.length}</td>
             <td style="text-align: center;">${totalUnits}</td>
             <td style="text-align: right; font-weight: 600;">${this.formatCurrency(totalVal)}</td>
             <td style="text-align: center;">
-              <button class="btn btn-danger btn-sm" onclick="ui.handleDeleteCategory('${cat.name}')">Delete</button>
+              <button class="btn btn-danger btn-sm" data-action="delete-category" data-category="${escapeHtml(cat.name)}">Delete</button>
             </td>
-          </tr>
-        `;
+          </tr>`;
       })
       .join('');
   }
 
-  handleDeleteCategory(categoryName: string): void {
+  /** Deletes a category, or explains why it cannot be deleted. */
+  private handleDeleteCategory(categoryName: string): void {
     try {
       this.manager.deleteCategory(categoryName);
       this.showToast('info', 'Category Removed', `Category "${categoryName}" deleted. Dropdowns updated.`);
       this.renderAll();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Cannot delete category';
-      this.showToast('error', 'Cannot Delete Category', msg);
+      this.showToast('error', 'Cannot Delete Category', err instanceof Error ? err.message : 'Cannot delete category');
     }
   }
 
-  renderMetricsBar(): void {
+  /** Updates the five summary cards at the top of the page. */
+  private renderMetricsBar(): void {
     const report = this.manager.generateStockReport();
-    const kpiVal = document.getElementById('kpiTotalValuation');
-    const kpiSkus = document.getElementById('kpiTotalSkus');
-    const kpiOnHand = document.getElementById('kpiTotalOnHand');
-    const kpiAlloc = document.getElementById('kpiTotalAllocated');
-    const kpiAvail = document.getElementById('kpiTotalAvailable');
-
-    if (kpiVal) kpiVal.textContent = this.formatCurrency(report.totalValuation);
-    if (kpiSkus) kpiSkus.textContent = String(report.totalSkus);
-    if (kpiOnHand) kpiOnHand.textContent = String(report.totalUnitsOnHand);
-    if (kpiAlloc) kpiAlloc.textContent = String(report.totalAllocatedUnits);
-    if (kpiAvail) kpiAvail.textContent = String(report.totalAvailableUnits);
+    const set = (id: string, text: string) => { const e = el(id); if (e) e.textContent = text; };
+    set('kpiTotalValuation', this.formatCurrency(report.totalValuation));
+    set('kpiTotalSkus', String(report.totalSkus));
+    set('kpiTotalOnHand', String(report.totalUnitsOnHand));
+    set('kpiTotalAllocated', String(report.totalAllocatedUnits));
+    set('kpiTotalAvailable', String(report.totalAvailableUnits));
   }
 
-  renderInventoryTable(): void {
-    const tbody = document.getElementById('inventoryTableBody');
+  /** Draws the main stock table using the current search text and filters. */
+  private renderInventoryTable(): void {
+    const tbody = el('inventoryTableBody');
     if (!tbody) return;
 
-    const searchVal = (document.getElementById('inventorySearchInput') as HTMLInputElement)?.value || '';
-    const catVal = (document.getElementById('categoryFilterSelect') as HTMLSelectElement)?.value || 'ALL';
-    const statusVal = (document.getElementById('stockStatusFilterSelect') as HTMLSelectElement)?.value || 'ALL';
-
-    const filtered = this.manager.filterItems(searchVal, catVal, statusVal);
+    const filtered = this.manager.filterItems(
+      valueOf('inventorySearchInput'),
+      valueOf('categoryFilterSelect') || 'ALL',
+      valueOf('stockStatusFilterSelect') || 'ALL'
+    );
 
     if (filtered.length === 0) {
       tbody.innerHTML = `
-        <tr>
-          <td colspan="10">
-            <div class="empty-state">
-              <div class="empty-title">No Matching Furniture Items</div>
-              <div class="empty-desc">Try clearing the search query or adjusting the category filters.</div>
-            </div>
-          </td>
-        </tr>
-      `;
+        <tr><td colspan="10">
+          <div class="empty-state">
+            <div class="empty-title">No Matching Furniture Items</div>
+            <div class="empty-desc">Try clearing the search query or adjusting the category filters.</div>
+          </div>
+        </td></tr>`;
       return;
     }
 
+    // One table row per item. Every value typed by a user goes through escapeHtml().
     tbody.innerHTML = filtered
       .map(item => {
-        const status = item.getStatus();
+        const status = item.getStatus();            // polymorphic: depends on the item's subclass
         const available = item.getAvailableStock();
+        const code = escapeHtml(item.itemCode);
         return `
           <tr>
-            <td><span class="sku-code">${item.itemCode}</span></td>
-            <td style="font-weight: 600;">${item.name}</td>
-            <td style="color: #64748b;">${item.category}</td>
+            <td><span class="sku-code">${code}</span></td>
+            <td style="font-weight: 600;">${escapeHtml(item.name)}<div class="item-type-label">${escapeHtml(item.getTypeLabel())} item</div></td>
+            <td style="color: #64748b;">${escapeHtml(item.category)}</td>
             <td style="text-align: right; font-weight: 600;">${this.formatCurrency(item.unitPrice)}</td>
             <td style="text-align: center; font-weight: 600;">${item.stockLevel}</td>
             <td style="text-align: center; color: #475569;">${item.allocatedCount}</td>
@@ -548,75 +523,61 @@ export class UIManager {
             <td style="text-align: right; font-weight: 600;">${this.formatCurrency(item.getTotalValuation())}</td>
             <td><span class="badge ${status.cssClass}">${status.label}</span></td>
             <td style="text-align: center; white-space: nowrap;">
-              <button class="btn btn-secondary btn-sm" onclick="ui.openQuickAllocateModal('${item.itemCode}')">Allocate</button>
-              <button class="btn btn-secondary btn-sm" onclick="ui.openAdjustStockModal('${item.itemCode}')" style="margin-left: 4px;">Adjust Stock</button>
-              <button class="btn btn-secondary btn-sm" onclick="ui.openRestockModal('${item.itemCode}')" style="margin-left: 4px;">Restock</button>
+              <button class="btn btn-secondary btn-sm" data-action="allocate" data-code="${code}">Allocate</button>
+              <button class="btn btn-secondary btn-sm" data-action="adjust" data-code="${code}" style="margin-left: 4px;">Adjust Stock</button>
+              <button class="btn btn-secondary btn-sm" data-action="restock" data-code="${code}" style="margin-left: 4px;">Restock</button>
             </td>
-          </tr>
-        `;
+          </tr>`;
       })
       .join('');
   }
 
-  populateAllocationDropdown(): void {
-    const select = document.getElementById('allocItemSelect') as HTMLSelectElement | null;
+  /** Refills the item drop-down on the Order Allocation form. */
+  private populateAllocationDropdown(): void {
+    const select = el<HTMLSelectElement>('allocItemSelect');
     if (!select) return;
-
-    const currentVal = select.value;
-    const items = Array.from(this.manager.items.values());
-
+    const current = select.value;
     select.innerHTML =
       '<option value="">Select an item to allocate...</option>' +
-      items
-        .map(item => {
-          const avail = item.getAvailableStock();
-          return `<option value="${item.itemCode}">[${item.itemCode}] ${item.name} (${this.formatCurrency(item.unitPrice)} | Available: ${avail})</option>`;
-        })
+      this.manager
+        .getAllItems()
+        .map(item => `<option value="${escapeHtml(item.itemCode)}">[${escapeHtml(item.itemCode)}] ${escapeHtml(item.name)} (${this.formatCurrency(item.unitPrice)} | Available: ${item.getAvailableStock()})</option>`)
         .join('');
-
-    if (currentVal && this.manager.items.has(currentVal)) {
-      select.value = currentVal;
-    }
+    if (this.manager.hasItem(current)) select.value = current;
   }
 
-  renderAllocationsTable(): void {
-    const tbody = document.getElementById('allocationsTableBody');
+  /** Draws the order log with Dispatch and Cancel buttons for active orders. */
+  private renderAllocationsTable(): void {
+    const tbody = el('allocationsTableBody');
     if (!tbody) return;
+    const allocs = this.manager.getAllocations();
 
-    const allocs = this.manager.allocations;
     if (allocs.length === 0) {
       tbody.innerHTML = `
-        <tr>
-          <td colspan="8">
-            <div class="empty-state">
-              <div class="empty-title">No Order Allocations Logged</div>
-              <div class="empty-desc">Allocate stock using the form above to reserve items for customer orders.</div>
-            </div>
-          </td>
-        </tr>
-      `;
+        <tr><td colspan="8">
+          <div class="empty-state">
+            <div class="empty-title">No Order Allocations Logged</div>
+            <div class="empty-desc">Allocate stock using the form above to reserve items for customer orders.</div>
+          </div>
+        </td></tr>`;
       return;
     }
 
     tbody.innerHTML = allocs
       .map(alloc => {
-        const item = this.manager.items.get(alloc.itemCode);
+        const item = this.manager.getItem(alloc.itemCode);
         const itemName = item ? item.name : 'Unknown Item';
-        const allocDate = new Date(alloc.date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        });
+        const allocDate = new Date(alloc.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const id = escapeHtml(alloc.id);
 
-        let statusBadge = '';
-        let actionButtons = '';
-
+        // The badge and buttons depend on the order's status.
+        let statusBadge: string;
+        let actionButtons: string;
         if (alloc.status === 'ACTIVE') {
           statusBadge = '<span class="badge badge-allocated">Active Reservation</span>';
           actionButtons = `
-            <button class="btn btn-secondary btn-sm" onclick="ui.dispatchAllocation('${alloc.id}')">Dispatch</button>
-            <button class="btn btn-danger btn-sm" onclick="ui.cancelAllocation('${alloc.id}')" style="margin-left: 4px;">Cancel</button>
-          `;
+            <button class="btn btn-secondary btn-sm" data-action="dispatch" data-id="${id}">Dispatch</button>
+            <button class="btn btn-danger btn-sm" data-action="cancel" data-id="${id}" style="margin-left: 4px;">Cancel</button>`;
         } else if (alloc.status === 'DISPATCHED') {
           statusBadge = '<span class="badge badge-in-stock">Dispatched</span>';
           actionButtons = '<span style="font-size: 12px; color: #64748b;">Completed</span>';
@@ -627,83 +588,86 @@ export class UIManager {
 
         return `
           <tr>
-            <td><span class="sku-code">${alloc.id}</span></td>
-            <td style="font-weight: 600;">${alloc.orderNumber}</td>
-            <td>${alloc.customerRef}</td>
+            <td><span class="sku-code">${id}</span></td>
+            <td style="font-weight: 600;">${escapeHtml(alloc.orderNumber)}</td>
+            <td>${escapeHtml(alloc.customerRef)}</td>
             <td>
-              <div style="font-weight: 600;">${itemName}</div>
-              <div class="sku-code" style="display: inline-block; font-size: 11px;">${alloc.itemCode}</div>
+              <div style="font-weight: 600;">${escapeHtml(itemName)}</div>
+              <div class="sku-code" style="display: inline-block; font-size: 11px;">${escapeHtml(alloc.itemCode)}</div>
             </td>
             <td style="text-align: center; font-weight: 700;">${alloc.quantity}</td>
             <td style="color: #64748b;">${allocDate}</td>
             <td>${statusBadge}</td>
             <td style="text-align: center; white-space: nowrap;">${actionButtons}</td>
-          </tr>
-        `;
+          </tr>`;
       })
       .join('');
   }
 
-  dispatchAllocation(allocId: string): void {
+  /** Dispatch button: ships the order and refreshes the screen. */
+  private dispatchAllocation(allocId: string): void {
     const res = this.manager.dispatchAllocation(allocId);
-    if (res.success) {
-      this.showToast('success', 'Order Dispatched', res.message);
-      this.renderAll();
-    } else {
-      this.showToast('error', 'Action Failed', res.message);
-    }
+    this.showToast(res.success ? 'success' : 'error', res.success ? 'Order Dispatched' : 'Action Failed', res.message);
+    if (res.success) this.renderAll();
   }
 
-  cancelAllocation(allocId: string): void {
+  /** Cancel button: releases the reserved units and refreshes the screen. */
+  private cancelAllocation(allocId: string): void {
     const res = this.manager.cancelAllocation(allocId);
-    if (res.success) {
-      this.showToast('info', 'Allocation Cancelled', res.message);
-      this.renderAll();
-    } else {
-      this.showToast('error', 'Action Failed', res.message);
-    }
+    this.showToast(res.success ? 'info' : 'error', res.success ? 'Allocation Cancelled' : 'Action Failed', res.message);
+    if (res.success) this.renderAll();
   }
 
-  renderReportView(): void {
+  /** Draws the valuation report and the reorder suggestions. */
+  private renderReportView(): void {
     const report = this.manager.generateStockReport();
+    const set = (id: string, text: string) => { const e = el(id); if (e) e.textContent = text; };
 
-    const timestampEl = document.getElementById('reportGeneratedTimestamp');
-    if (timestampEl) {
-      timestampEl.textContent = report.generatedDate;
-    }
+    set('reportGeneratedTimestamp', report.generatedDate);
+    set('rptTotalSkus', String(report.totalSkus));
+    set('rptTotalOnHand', String(report.totalUnitsOnHand));
+    set('rptTotalAllocated', String(report.totalAllocatedUnits));
+    set('rptTotalAvailable', String(report.totalAvailableUnits));
+    set('rptTotalValuation', this.formatCurrency(report.totalValuation));
 
-    const rptSkus = document.getElementById('rptTotalSkus');
-    const rptOnHand = document.getElementById('rptTotalOnHand');
-    const rptAlloc = document.getElementById('rptTotalAllocated');
-    const rptAvail = document.getElementById('rptTotalAvailable');
-    const rptVal = document.getElementById('rptTotalValuation');
-
-    if (rptSkus) rptSkus.textContent = String(report.totalSkus);
-    if (rptOnHand) rptOnHand.textContent = String(report.totalUnitsOnHand);
-    if (rptAlloc) rptAlloc.textContent = String(report.totalAllocatedUnits);
-    if (rptAvail) rptAvail.textContent = String(report.totalAvailableUnits);
-    if (rptVal) rptVal.textContent = this.formatCurrency(report.totalValuation);
-
-    const catTbody = document.getElementById('reportCategoryTableBody');
+    // Category breakdown table
+    const catTbody = el('reportCategoryTableBody');
     if (catTbody) {
       catTbody.innerHTML = report.categoryBreakdown
-        .map(
-          cat => `
+        .map(cat => `
           <tr>
-            <td style="font-weight: 600;">${cat.category}</td>
+            <td style="font-weight: 600;">${escapeHtml(cat.category)}</td>
             <td style="text-align: center;">${cat.skuCount}</td>
             <td style="text-align: center;">${cat.onHand}</td>
             <td style="text-align: center; color: #475569;">${cat.allocated}</td>
             <td style="text-align: center; font-weight: 700; color: #166534;">${cat.available}</td>
             <td style="text-align: right; font-weight: 600;">${this.formatCurrency(cat.valuation)}</td>
-          </tr>
-        `
-        )
+          </tr>`)
         .join('');
+    }
+
+    // Reorder suggestions table (items at or below their own low-stock level)
+    const reorderTbody = el('reorderTableBody');
+    if (reorderTbody) {
+      const suggestions = this.manager.getReorderSuggestions();
+      reorderTbody.innerHTML = suggestions.length
+        ? suggestions
+            .map(s => `
+              <tr>
+                <td><span class="sku-code">${escapeHtml(s.itemCode)}</span></td>
+                <td style="font-weight: 600;">${escapeHtml(s.name)}</td>
+                <td>${escapeHtml(s.typeLabel)}</td>
+                <td style="text-align: center;">${s.available}</td>
+                <td style="text-align: center;">${s.threshold}</td>
+                <td style="text-align: center; font-weight: 700;">${s.suggestedQty}</td>
+              </tr>`)
+            .join('')
+        : '<tr><td colspan="6" style="text-align: center; color: #64748b;">No items need reordering.</td></tr>';
     }
   }
 
-  renderAll(): void {
+  /** Redraws everything after any change. */
+  private renderAll(): void {
     this.populateCategoryDropdowns();
     this.renderMetricsBar();
     this.renderInventoryTable();
@@ -714,8 +678,4 @@ export class UIManager {
       this.renderReportView();
     }
   }
-}
-
-function resultIsSuccess(res: { success: boolean }): boolean {
-  return res.success;
 }

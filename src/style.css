@@ -716,3 +716,11 @@ table.data-table tbody tr:hover {
     border-bottom: 2px solid #000;
   }
 }
+
+/* Small grey line under each item name showing its furniture type (Large / Standard) */
+.item-type-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 2px;
+}
