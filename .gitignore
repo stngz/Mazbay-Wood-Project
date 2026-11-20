@@ -6,3 +6,7 @@ coverage/
 *.log
 .env
 .env.local
+
+# compiled output of npm test
+.test-build
+test-evidence

@@ -117,7 +117,7 @@
             <select id="stockStatusFilterSelect" class="filter-select">
               <option value="ALL">All Stock Statuses</option>
               <option value="IN_STOCK">In Stock</option>
-              <option value="LOW_STOCK">Low Stock (≤ 3)</option>
+              <option value="LOW_STOCK">Low Stock</option>
               <option value="OUT_OF_STOCK">Out of Stock</option>
             </select>
           </div>
@@ -168,6 +168,16 @@
                   <option value="">Select Category...</option>
                 </select>
                 <span class="form-hint">Manage or add new categories in the Category Manager tab.</span>
+              </div>
+
+              <!-- Furniture type: decides which subclass is created (LargeFurnitureItem or StandardFurnitureItem) -->
+              <div class="form-group">
+                <label class="form-label" for="newItemType">Item Size Type *</label>
+                <select id="newItemType" class="form-control" required>
+                  <option value="LARGE">Large (sofas, beds, tables): low stock at 2 or fewer</option>
+                  <option value="STANDARD">Standard (chairs, stools, lamps): low stock at 5 or fewer</option>
+                </select>
+                <span class="form-hint">Sets the low-stock warning level and the delivery note for this item.</span>
               </div>
 
               <div class="form-group">
@@ -339,6 +349,30 @@
                   </tr>
                 </thead>
                 <tbody id="reportCategoryTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Reorder suggestions: items at or below their own low-stock level (filled by UIManager.renderReportView) -->
+          <div style="margin-top: 24px;">
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #334155;">
+              Reorder Suggestions for the Manufacturer
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>SKU Code</th>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th style="text-align: center;">Available</th>
+                    <th style="text-align: center;">Low-Stock Level</th>
+                    <th style="text-align: center;">Suggested Order Qty</th>
+                  </tr>
+                </thead>
+                <tbody id="reorderTableBody">
                   <!-- Rendered dynamically -->
                 </tbody>
               </table>
